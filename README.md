@@ -23,3 +23,7 @@ Welcome to the Hard3n_Linux repository! Below is a carefully curated list of tas
 find / -mount -perm -2000 -type f -exec ls -ld {} \; > /home/user/setgid_.txt && chown -v user:user /home/user/setgid_.txt
 
 	•	Ongoing Configurations: Continue to fortify the system by modifying security settings in /etc/security, `/etc/host.conf​⬤
+
+ ## Have-A-Beautiful-Time!
+
+ always rememebr how Linux started and the joys it brings everyday. "Open Source For Freedom"
