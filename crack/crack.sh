@@ -13,6 +13,7 @@ if [ "$permission" != "y" ]; then
 fi
 
 # Check for tools
+# if no tools, need to load tools
 if ! command -v airmon-ng &> /dev/null; then
     echo "airmon-ng could not be found. Please install Aircrack-ng and run again."
     exit
@@ -27,6 +28,7 @@ fi
 INTERFACE="wlan0"
 
 # add interface selection script 
+# thought... tinkenter could be a good app to use to show the logs?
 
 # Start monitor mode 
 echo "Starting monitor mode on $INTERFACE..."
@@ -42,7 +44,7 @@ read -p "Enter the channel of the network: " CHANNEL
 # dont forget to identify ssid
 
 
-# need sleep function 
+# need sleep function if they want to toss multple attacks... another thought
 
 read -p "Enter the BSSID of the network: " BSSID
 read -p "Enter the channel of the network: " CHANNEL
