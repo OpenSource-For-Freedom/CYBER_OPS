@@ -1,5 +1,14 @@
 # The Linux Project
 
+       .--.    
+      |o_o |   
+      |:_/ |   
+     //   \ \  
+    (|     | ) 
+   /'\_   _/`\
+  \___)=(___/
+
+
 Private Task List: Pre-Release Activities
 
 Welcome to the Hard3n_Linux repository! Below is a carefully curated list of tasks to address prior to releasing our project. These activities are crucial for enhancing the security and functionality of our system. While the list is not in any specific order, each item is pivotal for our release strategy.
