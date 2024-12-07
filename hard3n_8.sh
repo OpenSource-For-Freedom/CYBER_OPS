@@ -65,28 +65,40 @@ exec_e apt install -yy \
 echo "Enabling AppArmor..."
 exec_e sudo systemctl enable --now apparmor
 
-## Enable UFW (Uncomplicated Firewall)
+## Enable UFW (Uncomplicated Firewall but no specific ports)
 echo "Setting up UFW firewall..."
 exec_e sudo ufw enable
 exec_e sudo ufw default deny incoming
 exec_e sudo ufw default allow outgoing
-exec_e sudo ufw allow ssh  # Only if SSH is needed and ask user if ssh is needed
-# if ssh is needed, ask user what inbound and outbound port is needed to allow ssh
 
-## Enable Fail2Ban
+# Ask user if SSH is needed and on what port
+read -p "Do you need SSH access? (y/n): " SSH_NEEDED
+if [[ "$SSH_NEEDED" == "y" ]]; then
+    read -p "Enter inbound port for SSH (default 22): " SSH_PORT
+    SSH_PORT=${SSH_PORT:-22}  # Default to port 22 if not specified
+    read -p "Enter outbound port for SSH (default 22): " SSH_OUT_PORT
+    SSH_OUT_PORT=${SSH_OUT_PORT:-22}  # Default to port 22 if not specified
+    echo "Allowing SSH inbound and outbound on port $SSH_PORT and $SSH_OUT_PORT"
+    exec_e sudo ufw allow "$SSH_PORT"
+    exec_e sudo ufw allow out "$SSH_OUT_PORT"
+else
+    echo "SSH access is disabled."
+fi
+
+## Fail2Ban
 echo "Enabling Fail2Ban..."
 exec_e sudo systemctl enable --now fail2ban
 
-## Install and configure ClamAV
+## ClamAV
 echo "Setting up ClamAV..."
 exec_e sudo freshclam
 exec_e sudo clamscan -r / --log="$LOG_DIR/clamav_scan_$DATE.log"
 
-## Run system audit with Lynis
+## Lynis
 echo "Running Lynis system audit..."
 exec_e sudo lynis audit system | tee "$LOG_DIR/lynis_audit_$DATE.log"
 
-## Podman containerization (Firefox example)
+## Podman 
 echo "Setting up Podman for Firefox container..."
 if ! is_package_installed podman; then
     echo "Podman not installed, installing..."
@@ -97,11 +109,11 @@ fi
 echo "Pulling Firefox container image..."
 exec_e sudo podman pull jess/firefox
 
-# Run Firefox in a container with network isolation (trial, would say we need to containerize any web based seach engine if its downloaded after the fact)
+# Run Firefox in a container with network isolation (trial, would say we need to containerize any web-based search engine if it's downloaded after the fact)
 echo "Running Firefox in a container (network isolation)..."
 exec_e sudo podman run -it --rm --net=none jess/firefox
 
-## LXC/LXD containerization (System containers)
+## LXC/LXD containerization (System containers all)
 echo "Setting up LXC/LXD containers..."
 if ! is_package_installed lxd; then
     echo "LXD not installed, installing..."
@@ -119,7 +131,7 @@ exec_e sudo lxc exec firefox-container -- firefox
 echo "Setting up Firejail sandbox for Firefox..."
 exec_e firejail firefox
 
-## Bubblewrap sandboxing (Firefox example and add for default search engines) 
+## Bubblewrap sandboxing (Firefox example and add for default search engines)
 echo "Setting up Bubblewrap for Firefox..."
 exec_e bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all --bind /home/$USER/.mozilla /home/$USER/.mozilla --bind /tmp /tmp -- /usr/bin/firefox
 
@@ -131,5 +143,6 @@ read -p "MUST reboot to apply HARD3N8 updates and changes? (y/n): " REBOOT_NOW
 if [[ "$REBOOT_NOW" == "y" ]]; then
     exec_e sudo reboot
 else
-    echo "Reboot the system to ensure all packages, files and containerization can take full effect."
+    echo "Reboot the system to ensure all packages, files, and containerization can take full effect."
 fi
+
