@@ -52,7 +52,6 @@ exec_e apt update && exec_e apt upgrade -yy
 echo "Installing security tools..."
 exec_e apt install -yy \
     podman \
-    lxd lxd-client \
     firejail \
     bubblewrap \
     ufw \
@@ -60,6 +59,24 @@ exec_e apt install -yy \
     clamav \
     lynis \
     apparmor apparmor-utils
+
+## Add LXD repository if not found (for installing lxd and lxd-client)
+if ! is_package_installed "lxd"; then
+    log "LXD not found. Adding LXD repository..."
+    exec_e sudo apt update
+    exec_e sudo apt install -y software-properties-common
+    exec_e sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable
+    exec_e sudo apt update
+
+    # Install LXD and lxd-client
+    exec_e sudo apt install -yy lxd lxd-client
+fi
+
+## If LXD is still not installed, try installing via Snap
+if ! is_package_installed "lxd"; then
+    log "LXD not installed via apt. Trying Snap..."
+    exec_e sudo snap install lxd
+fi
 
 ## Enable AppArmor
 echo "Enabling AppArmor..."
@@ -145,4 +162,3 @@ if [[ "$REBOOT_NOW" == "y" ]]; then
 else
     echo "Reboot the system to ensure all packages, files, and containerization can take full effect."
 fi
-
