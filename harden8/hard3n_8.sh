@@ -1,134 +1,148 @@
-#!/bin/bash 
-## Script that aims to harden an initial Debian based Linux build,
-## fresh out the gates with some minimum security enforcements
+#!/bin/bash
 
 ## e, errexit | u, nounset (treats unset variables as errors, ensuring better uniformity)
-## -o pipefail, ensures that if a command in a pipeline fails, the overall exit status of
-## the pipeline is the status of the last command to fail, rather
-## than just the status of the last command
+## -o pipefail, ensures that if a command in a pipeline fails, the overall exit status of the pipeline is the status of the last command to fail, rather than just the status of the last command
 set -euo pipefail
+
+## Log spec file directory
+LOG_DIR="/var/log/security_scans"
+sudo mkdir -p "$LOG_DIR"
+DATE=$(date +"%Y%m%d_%H%M%S")
+SCRIPT_LOG="$LOG_DIR/script_execution_$DATE.log"
+
+echo "Starting system hardening at $(date)" | sudo tee -a "$SCRIPT_LOG"
+
+## Function to check if a package is installed (simpler)
+is_package_installed() {
+    dpkg -l "$1" | grep -q "^ii"
+}
+
+## Function to log messages
+log() {
+    echo "$(date +"%Y-%m-%d %T") $1" | sudo tee -a "$SCRIPT_LOG"
+}
 
 ## Verify if script is executed with root privileges
 if [ "$(id -u)" -ne 0 ]; then
     log "Error: Please re-run this script with sudo or as root."
     exit 1
 fi
+
 ## Function to check if a command executed successfully
 check_success() {
     if [ $? -ne 0 ]; then
-        log "Error: $1 failed. Exiting hard3n_8.sh."
+        log "Error: $1 failed. Exiting script."
         exit 1
     else
         log "$1 completed successfully."
     fi
 }
+
 ## Exec extended, logging and checking command was successful
 exec_e() {
     "$@"
     check_success "$1"
 }
 
-## Kernel level mitigations, critical
-## Note to self to do a few additional things here...
-## Check if apparmor.cfg isn't already present, if it is, just add to it,
-## Add a check to make sure the update-grub went correctly, few ways to do this
-## Hmmm.... lots to work on!
-## Copying configurations from the local grub.d to system grub.d,
-## This will NOT overwrite your pre-existing values
-exec_e "sudo cp -Rv ./etc/default/grub.d/* /etc/default/grub.d"
-## Update grub if update-grub exists, else
-## regenerate grub configuration (update-grub the older way)
-if command -v update-grub &>/dev/null; then
-    exec_e "sudo update-grub"
+## Update system packages
+echo "Updating SEC_system packages..."
+exec_e apt update && exec_e apt upgrade -yy
+
+## Install security tools (Podman, LXC, Firejail, etc.)
+echo "Installing security tools..."
+exec_e apt install -yy \
+    podman \
+    lxd lxd-client \
+    firejail \
+    bubblewrap \
+    ufw \
+    fail2ban \
+    clamav \
+    lynis \
+    apparmor apparmor-utils
+
+## Enable AppArmor
+echo "Enabling AppArmor..."
+exec_e sudo systemctl enable --now apparmor
+
+## Enable UFW (Uncomplicated Firewall but no specific ports)
+echo "Setting up UFW firewall..."
+exec_e sudo ufw enable
+exec_e sudo ufw default deny incoming
+exec_e sudo ufw default allow outgoing
+
+# Ask user if SSH is needed and on what port
+read -p "Do you need SSH access? (y/n): " SSH_NEEDED
+if [[ "$SSH_NEEDED" == "y" ]]; then
+    read -p "Enter inbound port for SSH (default 22): " SSH_PORT
+    SSH_PORT=${SSH_PORT:-22}  # Default to port 22 if not specified
+    read -p "Enter outbound port for SSH (default 22): " SSH_OUT_PORT
+    SSH_OUT_PORT=${SSH_OUT_PORT:-22}  # Default to port 22 if not specified
+    echo "Allowing SSH inbound and outbound on port $SSH_PORT and $SSH_OUT_PORT"
+    exec_e sudo ufw allow "$SSH_PORT"
+    exec_e sudo ufw allow out "$SSH_OUT_PORT"
 else
-    exec_e "sudo grub-mkconfig -o /boot/grub/grub.cfg"
-fi
-## Notify user about system restart
-echo 'Your system will restart in 10 seconds if you do not cancel this program'
-## I should probably explain to them how to use ctrl-c...hmm..
-sleep 10
-## Reboot the system
-exec_e "sudo reboot"
-## End of Kernel hardening
-
-
-## Function to check if a package is installed
-is_package_installed() {
-    dpkg -l "$1" | grep -q "^ii"
-}
-
-## Log file directory
-## Should we do it in /var/log/security_scans or potentially
-## allow the user to input where to log (define a path variable)
-## or allow them the prompt chance to disable logging? Hmm...
-LOG_DIR="/var/log/security_scans"
-
-## Ensure the log directory exists
-sudo mkdir -p "$LOG_DIR"
-
-## Date and time for log file
-## Alternatively we can do %m/%d/%Y_%S%M%S, both are valid
-DATE=$(date +"%Y%m%d_%H%M%S")
-
-## Log file for script execution
-SCRIPT_LOG="$LOG_DIR/script_execution_$DATE.log"
-echo "Starting hard3n_8.sh execution at $(date)" | sudo tee -a "$SCRIPT_LOG"
-
-## Function for logging
-log() {
-    echo "$(date +"%Y-%m-%d %T") $1" | sudo tee -a "$SCRIPT_LOG"
-}
-
-## Part of hardening your system is maintaining a minimized attack surface via reducing unnecessary installed applications
-## APT::Sandbox::Seccomp further reading: https://lists.debian.org/debian-doc/2019/02/msg00009.html
-echo 'APT::Sandbox::Seccomp "true";' | sudo tee /etc/apt/apt.conf.d/01seccomp
-echo -e 'APT::AutoRemove::RecommendsImportant "false";\nAPT::Install-Recommends "0";\nAPT::Install-Suggests "0";' | sudo tee /etc/apt/apt.conf.d/01defaultrec
-
-## Update package list
-exec_e apt update
-
-## Install ufw then enable and configure it, if not installed
-if ! is_package_installed ufw; then
-    exec_e apt update
-    exec_e apt install -yy ufw --no-install-recommends --no-install-suggests
-    exec_e ufw enable
-    exec_e ufw default deny incoming
-    exec_e systemctl --force --now enable ufw
-    exec_e ufw reload
-    exec_e ufw --force --now restart
+    echo "SSH access is disabled."
 fi
 
-## Install and configure ClamAV, rkhunter, chkrootkit, Fail2Ban, Lynis, AIDE, and AppArmor (plus AA-extras and utils)
-PACKAGES=("clamav" "rkhunter" "chkrootkit" "fail2ban" "lynis" "aide" "apparmor apparmor-profiles apparmor-profiles-extra apparmor-utils")
-for package in "${PACKAGES[@]}"; do
-    if ! is_package_installed "$package"; then
-        execute_command apt install -yy $package --no-install-recommends --no-install-suggests
-    fi
-done
+## Fail2Ban
+echo "Enabling Fail2Ban..."
+exec_e sudo systemctl enable --now fail2ban
 
-echo "Security Tools Installed Successfully."
+## ClamAV
+echo "Setting up ClamAV..."
+exec_e sudo freshclam
+exec_e sudo clamscan -r / --log="$LOG_DIR/clamav_scan_$DATE.log"
 
-## Enable strict mode, RE-enable in case anything unset
-set -euo pipefail
+## Lynis
+echo "Running Lynis system audit..."
+exec_e sudo lynis audit system | tee "$LOG_DIR/lynis_audit_$DATE.log"
 
-## downstream script for more hardening like you mentioned(TCP wrappers, the boogie_man and of course lock_ness?!?! just throwing more ideas for some light weight
-#utilities for this project)
-source harden8_deep.sh
-check_harden8_deep_success() {
-    if [ $? -eq 0 ]; then
-        echo "harden8_deep dependency ran successfully."
-    else
-        echo "Error: harden8_deep.sh did not run successfully."
-        exit 1
-    fi
-}
-#check for success
-check_harden8_deep_success
+## Podman 
+echo "Setting up Podman for Firefox container..."
+if ! is_package_installed podman; then
+    echo "Podman not installed, installing..."
+    exec_e sudo apt install -yy podman
+fi
 
-## Run security scans
-exec_e clamscan -r / --log="$LOG_DIR/clamav_scan_$DATE.log"
-exec_e rkhunter --cronjob --update --quiet
-exec_e chkrootkit | sudo tee "$LOG_DIR/chkrootkit_scan_$DATE.log"
+# Pull Firefox container image
+echo "Pulling Firefox container image..."
+exec_e sudo podman pull jess/firefox
 
-## Notification
-log "Daily security scans completed. Logs stored in $LOG_DIR"
+# Run Firefox in a container with network isolation (trial, would say we need to containerize any web-based search engine if it's downloaded after the fact)
+echo "Running Firefox in a container (network isolation)..."
+exec_e sudo podman run -it --rm --net=none jess/firefox
+
+## LXC/LXD containerization (System containers all)
+echo "Setting up LXC/LXD containers..."
+if ! is_package_installed lxd; then
+    echo "LXD not installed, installing..."
+    exec_e sudo apt install -yy lxd lxd-client
+    exec_e sudo lxd init --auto
+fi
+
+# Create an LXC container for Firefox (need to make this default for any search engine)
+echo "Creating LXC container for Firefox..."
+exec_e sudo lxc launch ubuntu:20.04 firefox-container
+exec_e sudo lxc exec firefox-container -- apt update && sudo apt install -yy firefox
+exec_e sudo lxc exec firefox-container -- firefox
+
+## Firejail sandboxing for applications (Firefox example but make this default for any post downloaded search engine)
+echo "Setting up Firejail sandbox for Firefox..."
+exec_e firejail firefox
+
+## Bubblewrap sandboxing (Firefox example and add for default search engines)
+echo "Setting up Bubblewrap for Firefox..."
+exec_e bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all --bind /home/$USER/.mozilla /home/$USER/.mozilla --bind /tmp /tmp -- /usr/bin/firefox
+
+## Final Notification and Reboot
+log "System hardening complete. All security measures are now in place."
+
+# Prompt user to reboot
+read -p "MUST reboot to apply HARD3N8 updates and changes? (y/n): " REBOOT_NOW
+if [[ "$REBOOT_NOW" == "y" ]]; then
+    exec_e sudo reboot
+else
+    echo "Reboot the system to ensure all packages, files, and containerization can take full effect."
+fi
+
