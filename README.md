@@ -20,27 +20,28 @@ We’ve included colorfully fun, detailed descriptions for each task to give you
 
 ## 🛡 System Hardening Research 📚
 
-## Review and Analyze Hardening Scripts:
+### Review and Analyze Hardening Scripts:
 Study successful system hardening scripts like harbian-audit. These scripts provide a blueprint for how security measures should be structured, implemented, and executed across Linux systems.
 ***Objective*** To understand their structure, logic, and methods for mitigating security vulnerabilities, and apply them in our own hardening process.
 Importance: Ensures we are adopting best practices in system hardening that are widely recognized and tested in the security community.
 
 ## 🔑 Permission Security 🔒
 
-## Evaluate Special Permissions:
+### Evaluate Special Permissions:
 Special file permissions like setuid, setgid, and sticky have specific implications for system security. We need to carefully evaluate the risk of removing these from executables.
 ***Objective***  Safely remove or modify unnecessary special permissions to reduce potential attack surfaces.
 Note: Incorrect changes could compromise system stability. Always perform tests in a controlled environment first.
 
 ## 👥 User Group Configuration 👤
 
-## Console User Group Analysis in Whonix:
+### Console User Group Analysis in Whonix:
 Whonix is a security-focused Linux distribution that uses anonymity via Tor. Within Whonix, the console user group plays a role in user management and system access.
 ***Objective*** Investigate the necessity of this group, explore any potential for improvements, and evaluate whether additional user groups might improve security.
 mportance: Proper user group management helps reduce the potential for privilege escalation and unauthorized access.
 		
 ## ⚙️ Security Enhancements 🔐
-## 📄 Track and Document Setgid Permissions
+
+### 📄 Track and Document Setgid Permissions
 
 Run the following command:
 
@@ -54,7 +55,7 @@ Note: Misconfigured setgid files can lead to privilege escalation vulnerabilitie
 
 ## 🔧 Ongoing Configurations 🛠️
 
-## Modify Security Settings:
+### Modify Security Settings:
 Explore security configuration files located in /etc/security and /etc/host.conf. Modify them to enhance system hardening.
 ***Objective*** : Tighten system settings and prevent unauthorized access or privilege escalation.
 Example Configurations:
