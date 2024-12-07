@@ -9,11 +9,12 @@ We’ve included colorful, detailed descriptions for each task to give you a bet
 ---
 
 ```bash
-##########################
-#     HARD3N_LINUX      #
-#       PROJECT         #
-#     - SYSTEM HARDENING #
-##########################
+#############################
+#     Th3 HARD3N_LINUX      #
+#         PROJECT           #
+#     SYSTEM HARDENING      #
+#  "The Future of Deb_Sec"  #
+#############################
 ```
 # 📜 Task List: Pre-Release Activities 📜
 ## 🛡 System Hardening Research 📚
