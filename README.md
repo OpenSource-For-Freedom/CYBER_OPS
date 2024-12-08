@@ -14,8 +14,8 @@
         #                            Hardening and                                   #
         #                      System protection measures.                           #
         #                 ----------------------------------------                   #                                     
-        #                              License: MIT License                          #
-        #                              Version: 1.2.0                                #
+        #                           License: MIT License                             #
+        #                              Version: 1.2                                  #
         #       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git          #
         ##############################################################################
 ```
