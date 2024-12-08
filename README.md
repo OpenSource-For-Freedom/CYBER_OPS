@@ -1,17 +1,3 @@
-# **The Linux Project**: Hard3n_Linux Repository
-
-## Welcome to The Linux Hardening and Security Arena! 
-
-The **Linux** repository is dedicated to enhancing the security and functionality of Linux systems.
----
-# **Overview** 
-### As a Linux Systems Engineer its enjoyable to pursue both Security and creativity. In the development of this repository we want to include all facits of Kernal Hardeing, Penetration testing and OS Security for Debian Linux Systems. 
----
-This document outlines the **pre-release activities** that need to be completed before we finalize the project release. These tasks are designed to reinforce the system's security posture, improve performance, and streamline user management.
-
-We’ve included detailed descriptions for each task to give you a better understanding of their importance. With this, you’ll be ready to dive deep into Debian system hardening and optimization, ensuring your system is secure,  a tight button of fun, stable, and efficient. Availability and Security is our goal. 
-
----
 
 ```bash
 ##############################################################################
@@ -33,6 +19,25 @@ We’ve included detailed descriptions for each task to give you a better unders
 #       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git          #
 ##############################################################################
 ```
+
+
+
+
+
+
+
+# **The Linux Project**: Hard3n_Linux Repository
+
+## Welcome to The Linux Hardening and Security Arena! 
+
+The **Linux** repository is dedicated to enhancing the security and functionality of Linux systems.
+---
+# **Overview** 
+### As a Linux Systems Engineer its enjoyable to pursue both Security and creativity. In the development of this repository we want to include all facits of Kernal Hardeing, Penetration testing and OS Security for Debian Linux Systems. 
+---
+This document outlines the **pre-release activities** that need to be completed before we finalize the project release. These tasks are designed to reinforce the system's security posture, improve performance, and streamline user management.
+
+We’ve included detailed descriptions for each task to give you a better understanding of their importance. With this, you’ll be ready to dive deep into Debian system hardening and optimization, ensuring your system is secure,  a tight button of fun, stable, and efficient. Availability and Security is our goal. 
 
 # Task List: Pre-Release Activities 
 
