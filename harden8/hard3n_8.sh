@@ -60,22 +60,26 @@ exec_e apt install -yy \
     lynis \
     apparmor apparmor-utils
 
-## Add LXD repository if not found (for installing lxd and lxd-client)
-if ! is_package_installed "lxd"; then
-    log "LXD not found. Adding LXD repository..."
+## Check if Snap is installed, and install if not
+if ! command -v snap &> /dev/null; then
+    log "SNAP not found. Installing Snap..."
     exec_e sudo apt update
+    exec_e sudo apt install -y snapd
+fi
+
+## Check if LXD is installed, and install if not
+if ! command -v lxd &> /dev/null; then
+    log "LXD not found. Installing LXD via Snap..."
+    exec_e sudo snap install lxd
+fi
+
+## Optional: If you still want to add the PPA (for apt-based installation):
+if ! command -v lxd &> /dev/null; then
+    log "Adding LXD PPA..."
     exec_e sudo apt install -y software-properties-common
     exec_e sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable
     exec_e sudo apt update
-
-    # Install LXD and lxd-client
-    exec_e sudo apt install -yy lxd lxd-client
-fi
-
-## If LXD is still not installed, try installing via Snap
-if ! is_package_installed "lxd"; then
-    log "LXD not installed via apt. Trying Snap..."
-    exec_e sudo snap install lxd
+    exec_e sudo apt install -y lxd
 fi
 
 ## Enable AppArmor
