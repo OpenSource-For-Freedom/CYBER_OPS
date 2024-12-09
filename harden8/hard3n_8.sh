@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Print the ASCII art and text
-echo "        --------------------------------------------------------------------"
+echo "        -----------------------------------------------------------------------"
 echo "                    H   H   AAAAA   RRRR    DDDD    333333    NN    N"
 echo "          ======== H   H  A     A  R   R   D   D       33    N N   N" =======
 echo "          ======= HHHHH  AAAAAAA  RRRR    D   D     33      N  N  N" ========
 echo "          ====== H   H  A     A  R  R    D   D       33    N   N N" =========
 echo "                H   H  A     A  R   R   DDDD    333333    N    NN"
-echo "        -------------------------------------------------------------------"
+echo "        -----------------------------------------------------------------------"
 echo "                    \"HARD3N\" - The Linux Security Project"
 echo "                    ----------------------------------------"
 echo "                     A project focused on improving Linux"
