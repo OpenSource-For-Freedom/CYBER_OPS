@@ -32,7 +32,7 @@ sudo mkdir -p "$LOG_DIR"
 DATE=$(date +"%Y%m%d_%H%M%S")
 SCRIPT_LOG="$LOG_DIR/script_execution_$DATE.log"
 
-echo "Starting system hardening at $(date)" | sudo tee -a "$SCRIPT_LOG"
+echo "Starting system hard3ning at $(date)" | sudo tee -a "$SCRIPT_LOG"
 
 ## Function to check if a package is installed (simpler)
 is_package_installed() {
