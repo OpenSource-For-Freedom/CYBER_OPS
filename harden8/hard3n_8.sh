@@ -1,5 +1,26 @@
 #!/bin/bash
 
+# Print the ASCII art and text
+echo "        --------------------------------------------------------------------"
+echo "                    H   H   AAAAA   RRRR    DDDD    333333    NN    N"
+echo "          ======== H   H  A     A  R   R   D   D       33    N N   N" =======
+echo "          ======= HHHHH  AAAAAAA  RRRR    D   D     33      N  N  N" ========
+echo "          ====== H   H  A     A  R  R    D   D       33    N   N N" =========
+echo "                H   H  A     A  R   R   DDDD    333333    N    NN"
+echo "        -------------------------------------------------------------------"
+echo "                    \"HARD3N\" - The Linux Security Project"
+echo "                    ----------------------------------------"
+echo "                     A project focused on improving Linux"
+echo "                    security by automating, containerizing"
+echo "                                Hardening and"
+echo "                         System protection measures."
+echo "                             License: MIT License"
+echo "                                Version: 1.2"
+echo "          GitHub: https://github.com/OpenSource-For-Freedom/Linux.git"
+echo ""
+echo ""
+echo ""print text
+
 ## e, errexit | u, nounset (treats unset variables as errors, ensuring better uniformity)
 ## -o pipefail, ensures that if a command in a pipeline fails, the overall exit status of the pipeline is the status of the last command to fail, rather than just the status of the last command
 set -euo pipefail
