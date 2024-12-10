@@ -181,6 +181,10 @@ exec_e bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all --bind /home/$U
 ## Final Notification and Reboot
 log "System hardening complete. All security measures are now in place."
 
+# Call the Hard3n_Qube.py file after the parent script finishes
+echo "[+] Executing Hard3n_Qube.py for deeper actions..."
+python3 /path/to/Hard3n_Qube.py
+
 # Prompt user to reboot
 read -p "MUST reboot to apply HARD3N8 updates and changes? (y/n): " REBOOT_NOW
 if [[ "$REBOOT_NOW" == "y" ]]; then
