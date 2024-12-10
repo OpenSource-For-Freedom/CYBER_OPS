@@ -7,10 +7,10 @@
         #         H   H  A     A  R  R    D   D       33    N   N N        #    
         #        H   H  A     A  R   R   DDDD    333333    N    NN         #
         ####################################################################
-        ##             "HARD3N" - The Linux Security Project             ##          
+        ##             "HARD3N" - The Linux Security Project              ##          
         ##            ----------------------------------------            ##          
-        ##             A project focused on improving Linux               ##          
-        ##            security through automating, containerizing              ##         
+        ##           A project focused on improving Debian Linux          ##          
+        ##            security through automating, containerizing         ##         
         ##                        Hardening and                           ##        
         ##                 System protection measures.                    ##         
         ##           ----------------------------------------             ##                                       
