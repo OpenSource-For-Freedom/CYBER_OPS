@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-# Function to run shell commands with error checking
+# run error handling 
 def run_command(command, description=""):
     print(f"[+] {description}")
     result = subprocess.run(command, shell=True, text=True)
@@ -12,7 +12,7 @@ def run_command(command, description=""):
         print(f"[-] Error: {description} failed.")
         sys.exit(1)
 
-# Verify the script is run with root privileges
+# Verify root 
 if os.geteuid() != 0:
     print("[-] This script must be run as root. Please use 'sudo'.")
     sys.exit(1)
@@ -24,13 +24,13 @@ def lockdown_nic():
     run_command("ip link set lo up", "Enabling loopback interface")
     print("[+] NIC locked down. Only loopback interface is active.")
 
-# Step 2: Configure TOR with Snowflake bridge
+# Step 2: Configure TOR with **Snowflake** bridge
 def configure_tor():
     print("[+] Configuring TOR with Snowflake bridge...")
     # Install TOR if not already installed
     run_command("apt update && apt install -y tor", "Installing TOR")
     
-    # Configure TOR
+    # slap in TOR
     torrc_content = """
 ClientTransportPlugin snowflake exec /usr/bin/snowflake-client
 UseBridges 1
@@ -89,10 +89,10 @@ def setup_tcpdump():
     )
     print(f"[+] Tcpdump command: {tcpdump_command}")
     print("[+] Tcpdump will log up to 12MB in /var/log/tcpdump_log.pcap.")
-    # Uncomment the next line to start tcpdump automatically:
-    # run_command(tcpdump_command, "Starting tcpdump")
+    # comment the next line to stop tcpdump automatically:
+    run_command(tcpdump_command, "Starting tcpdump")
 
-# Main function to run all steps
+# Origin file to run all steps
 def main():
     print("[+] Hard3n_Qube.py starting...")
     
