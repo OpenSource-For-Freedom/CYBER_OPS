@@ -3,7 +3,7 @@
 # Ask for the SSID
 read -p "Enter the SSID of the network you have permission to test: " SSID
 
-# check permissions
+# Check permissions
 echo "You must have explicit permission to test the network security of this SSID. Proceed? (y/n)"
 read permission
 
@@ -23,32 +23,33 @@ if ! command -v airodump-ng &> /dev/null; then
     exit
 fi
 
-# identify the interface but add ind interface if different.
-INTERFACE="wlan0"
+# Identify available interfaces
+echo "Available Wi-Fi interfaces:"
+iw dev | grep Interface | awk '{print $2}'
+read -p "Enter the Wi-Fi interface to use: " INTERFACE
 
-# add interface selection script 
-
-# Start monitor mode 
+# Start monitor mode
 echo "Starting monitor mode on $INTERFACE..."
 airmon-ng start $INTERFACE
-
 MONITOR_INTERFACE="${INTERFACE}mon"
 
-# ask for bssid
-read -p "Enter the BSSID of the network: " BSSID
-read -p "Enter the channel of the network: " CHANNEL
+# Scan for networks
+echo "Scanning for networks. Press CTRL+C when you find the target."
+airodump-ng $MONITOR_INTERFACE
 
-# automate this with grep/awk based on the SSID input.
-# dont forget to identify ssid
+# Automate BSSID and channel discovery
+read -p "Enter the SSID of the target network: " TARGET_SSID
+BSSID=$(airodump-ng $MONITOR_INTERFACE | grep "$TARGET_SSID" | awk '{print $1}')
+CHANNEL=$(airodump-ng $MONITOR_INTERFACE | grep "$TARGET_SSID" | awk '{print $6}')
 
+if [ -z "$BSSID" ] || [ -z "$CHANNEL" ]; then
+  echo "Unable to find the network. Exiting."
+  airmon-ng stop $MONITOR_INTERFACE
+  exit 1
+fi
 
-# need sleep function 
-
-read -p "Enter the BSSID of the network: " BSSID
-read -p "Enter the channel of the network: " CHANNEL
-
-# This will create files with the prefix "capture"
-echo "Capturing handshakes. Press CTRL+C to stop."
+# Capture handshakes
+echo "Capturing handshakes for BSSID: $BSSID on Channel: $CHANNEL."
 airodump-ng --bssid $BSSID -c $CHANNEL --write capture $MONITOR_INTERFACE
 
 # Stop monitor mode
