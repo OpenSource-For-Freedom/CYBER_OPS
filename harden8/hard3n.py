@@ -6,34 +6,6 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 
-# Print banner
-
-def print_banner(): 
-    print("        -----------------------------------------------------------------------")
-    print("                    H   H   AAAAA   RRRR    DDDD    333333    NN    N")
-    print("        ========== H   H  A     A  R   R   D   D       33    N N   N")('=======') 
-    print("        ========= HHHHH  AAAAAAA  RRRR    D   D     33      N  N  N")('========')
-    print("        ======== H   H  A     A  R  R    D   D       33    N   N N")('=========')
-    print("                H   H  A     A  R   R   DDDD    333333    N    NN")
-    print("        -----------------------------------------------------------------------")
-    print("                    \"HARD3N\" - The Linux Security Project")
-    print("                    ----------------------------------------")
-    print("                     A project focused on improving Linux")
-    print("                    security by automating, containerizing")
-    print("                                Hardening and")
-    print("                         System protection measures.")
-    print("                             License: MIT License")
-    print("                                Version: 1.2")
-    print("                               Dev: Tim + Kiu")
-    print("          GitHub: https://github.com/OpenSource-For-Freedom/Linux.git")
-    print("")
-    print("")
-    print("")
-
-def main():
-    # Call the function to print the banner when the script runs
-    print_banner()
-
 # Define log directory and file
 LOG_DIR = "/var/log/security_scans"
 os.makedirs(LOG_DIR, exist_ok=True)

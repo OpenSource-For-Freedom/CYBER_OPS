@@ -36,7 +36,8 @@ def ping_target(ip_address):
 def run_nmap_scan(ip_address, output_dir, status_label):
     try:
         nm = nmap.PortScanner()
-        scan_args = "-sS -Pn -T4"
+        scan_args = "nmap -sS -Pn -T4 -A -p- 22,80,443,8080 --randomize-hosts"
+"
         status_label.config(text="Running Nmap scan...")
         nm.scan(hosts=ip_address, arguments=scan_args)
         
@@ -109,7 +110,7 @@ def start_scan(target_ip, output_dir, status_label):
 # GUI Setup
 def create_gui():
     root = tk.Tk()
-    root.title("Network Scan Tool")
+    root.title("VeriFY Port Scanning Tool")
     root.geometry("500x300")
 
     # Input Frame

@@ -29,9 +29,10 @@
 
 
 
-#                      **The Linux Project**: Hard3n_Linux Repository
-
-
+#                      **The Linux Project**: 
+## Hard3n
+## VeriFY 
+## Crack
 
 
 ###                    Welcome to The Linux Hardening and Security Arena! 

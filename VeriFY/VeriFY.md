@@ -1,4 +1,4 @@
-## "SniffMe" a new format using Open Source Network Scanning tools. 
+## "VeriFY" a new format using Open Source Network Scanning tools. 
 
 **This is the Linux (Unix) file space for endpoint, Server and Sandbox testing and Development**
 ```
@@ -6,13 +6,13 @@ mkdir "network_scans"
 ```
 Don't forget to:
 ```
-sudo apt update && upgrade
+sudo apt update && sudo apt full-upgrade -y
 ```
-**Project Readme's will exist below**
+**PROJECT SCOPE**
 ---
-***P1: Sniff_Me**
+***P1: VeriFY**
 ---
-The goal in developing this python file is to quickly deploy an internal or external Network Scanning package for both Linux and Windows OS, that outputs the results in a report format onto the users desktop or selected file path. 
+The goal in developing this python file is to quickly deploy an internal or external Network Scanning package for Linux Based OS, that outputs the results in a report format onto the users desktop or selected file path. 
 ---
 1. The File imports necessary modules such as os, nmap, csv, time, and pythonping.
 2. It will set some constants, including the target IP, Nmap file path, and the output directory for the scan results, which will be edited to allow more user interface.
