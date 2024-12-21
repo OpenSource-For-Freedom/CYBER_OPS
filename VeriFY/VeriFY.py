@@ -17,7 +17,7 @@ def is_valid_ip(ip):
 # Check Admin Privileges
 def check_admin():
     if os.geteuid() != 0:
-        tk.messagebox.showerror("Error", "This script must be run as root or with admin privileges.")
+        tk.messagebox.showerror("Error", "Must run as Higher.")
         sys.exit(1)
 
 # Ping Target
