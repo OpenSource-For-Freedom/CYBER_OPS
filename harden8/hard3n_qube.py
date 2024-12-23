@@ -4,15 +4,20 @@ import os
 import subprocess
 import sys
 
-# run error handling 
+# run error handling
 def run_command(command, description=""):
     print(f"[+] {description}")
-    result = subprocess.run(command, shell=True, text=True)
-    if result.returncode != 0:
-        print(f"[-] Error: {description} failed.")
+    try:
+        result = subprocess.run(command, shell=True, text=True, check=True, capture_output=True)
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr:
+            print(f"[-] Error: {result.stderr}")
+    except subprocess.CalledProcessError as e:
+        print(f"[-] Error: {description} failed. {e.stderr}")
         sys.exit(1)
 
-# Verify root 
+# Verify root
 if os.geteuid() != 0:
     print("[-] This script must be run as root. Please use 'sudo'.")
     sys.exit(1)
@@ -24,13 +29,14 @@ def lockdown_nic():
     run_command("ip link set lo up", "Enabling loopback interface")
     print("[+] NIC locked down. Only loopback interface is active.")
 
-# Step 2: Configure TOR with **Snowflake** bridge
+# Step 2: Configure TOR with Snowflake bridge
 def configure_tor():
     print("[+] Configuring TOR with Snowflake bridge...")
-    # Install TOR if not already installed
-    run_command("apt update && apt install -y tor", "Installing TOR")
-    
-    # slap in TOR
+
+    # Install TOR and Snowflake not installed
+    run_command("apt update && apt install -y tor snowflake-client", "Installing TOR and Snowflake client")
+
+    # slap in TOR configuration
     torrc_content = """
 ClientTransportPlugin snowflake exec /usr/bin/snowflake-client
 UseBridges 1
@@ -45,13 +51,19 @@ TransPort 9040
     run_command("systemctl restart tor", "Restarting TOR service")
     print("[+] TOR configured with Snowflake bridge.")
 
-# Step 3: Set loopback as DNS
+# Step 3: Set loopback as DNS that works with TOR
 def configure_dns_loopback():
     print("[+] Configuring loopback as DNS...")
-    resolv_conf_content = "nameserver 127.0.0.1\n"
+
+    # Ensure that the DNS queries go through TOR (127.0.0.1 is the default for TOR DNS resolution) important***
+    resolv_conf_content = """
+# TOR DNS
+nameserver 127.0.0.1
+"""
     with open("/etc/resolv.conf", "w") as resolv_conf_file:
         resolv_conf_file.write(resolv_conf_content)
-    print("[+] DNS configured to use loopback.")
+    
+    print("[+] DNS configured to use loopback (127.0.0.1).")
 
 # Step 4: Containerize browser activity
 def containerize_browser():
@@ -63,7 +75,7 @@ def containerize_browser():
     browser_container_command = "firejail --net=none firefox"
     print(f"[+] Browser container command: {browser_container_command}")
     print("[+] To launch the browser, run the above command manually.")
-    # Optionally uncomment the next line to auto-launch the browser in a container:
+    # you can uncomment the next line to auto-launch the browser in a container:
     # run_command(browser_container_command, "Launching browser in Firejail")
 
 # Step 5: Disable web-based downloads
@@ -83,16 +95,16 @@ def setup_tcpdump():
     # Install tcpdump
     run_command("apt install -y tcpdump", "Installing tcpdump")
     
-    # Start tcpdump with a 12MB log limit
+    # Start tcpdump with a 12MB log limit max with recycle
     tcpdump_command = (
         "tcpdump -i lo -w /var/log/tcpdump_log.pcap -C 12 -Z root"
     )
     print(f"[+] Tcpdump command: {tcpdump_command}")
     print("[+] Tcpdump will log up to 12MB in /var/log/tcpdump_log.pcap.")
-    # comment the next line to stop tcpdump automatically:
-    run_command(tcpdump_command, "Starting tcpdump")
+    # Uncomment the next line to start tcpdump automatically:
+    # run_command(tcpdump_command, "Starting tcpdump")
 
-# Origin file to run all steps
+# run all steps
 def main():
     print("[+] Hard3n_Qube.py starting...")
     
