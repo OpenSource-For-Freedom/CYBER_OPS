@@ -15,14 +15,14 @@
         ##                 System protection measures.                    ##         
         ##           ----------------------------------------             ##                                       
         ##                     License: MIT License                       ##   
-        ##                        Version: 1.2                            ##     
+        ##                        Version: 1.3                            ##     
         ##  GitHub: https://github.com/OpenSource-For-Freedom/Linux.git   ## 
         ##                                                                ##
         ####################################################################
 ```
 
 
-###                             ***Developers: Tim + Kiu***
+###                             ***Developers: Tim Burns***
 
 
 ##                     
