@@ -2,29 +2,18 @@
 
 #### All credit goes to the Kicksecure/Whonix team for these files, modifications to them have been slight...   ####
 #### Take note regarding this file in particular, modifications have been made from the original, allowing      ####
-#### for a higher level of security... thanks        ####
-#### 			again to the Kicksecure/Whonix crew, keeping helping us learn and grow!                 ####
+    #### for a higher level of security... thanks        ####
+#### 			again to the Kicksecure/Whonix crew, keeping helping us learn and grow!                         ####
 ##
-## Copyright (C) 2019 - 2023 ENCRYPTED SUPPORT LP <adrelanos@whonix.org>
+## Copyright (C) 2019 - 2023 ENCRYPTED SUPPORT LP <adrelanos@whonix.org>                     
 ## See the file COPYING for copying conditions.
 ##
 ## Enables all known mitigations for CPU vulnerabilities.
 ##
-## https://www.kernel.org/doc/html/latest/admin-guide/hw-vuln/index.html
-## https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.html
-## https://forums.whonix.org/t/should-all-kernel-patches-for-cpu-bugs-be-unconditionally-enabled-vs-performance-vs-applicability/7647
 
 ## Enable known mitigations for CPU vulnerabilities
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX mitigations=auto"
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX spectre_v2=on"
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX spec_store_bypass_disable=on"
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX l1tf=full,force"
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX mds=full"
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX tsx=off tsx_async_abort=full"
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX kvm.nx_huge_pages=force"
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX l1d_flush=on"
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX mmio_stale_data=full"
-GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX retbleed=auto"
+sed -i 's/^GRUB_CMDLINE_LINUX="/& mitigations=auto spectre_v2=on spec_store_bypass_disable=on l1tf=full,force mds=full tsx=off tsx_async_abort=full kvm.nx_huge_pages=force l1d_flush=on mmio_stale_data=full retbleed=auto /' /etc/default/grub
+update-grub
 
 # Print the ASCII
 echo "        -----------------------------------------------------------------------"
@@ -41,15 +30,14 @@ echo "                    security by automating, containerizing"
 echo "                                Hardening and"
 echo "                         System protection measures."
 echo "                             License: MIT License"
-echo "                                Version: 1.2"
+echo "                                Version: 1.3"
 echo "                               Dev: Tim + Kiu"
 echo "          GitHub: https://github.com/OpenSource-For-Freedom/Linux.git"
 echo ""
 echo ""
 echo ""
 
-## e, errexit | u, nounset (treats unset variables as errors, ensuring better uniformity)
-## -o pipefail, ensures that if a command in a pipeline fails, the overall exit status of the pipeline is the status of the last command to fail, rather than just the status of the last command
+## e, errexit | u, nounset | -o pipefail
 set -euo pipefail
 
 ## Log spec file directory
@@ -60,142 +48,100 @@ SCRIPT_LOG="$LOG_DIR/script_execution_$DATE.log"
 
 echo "Starting system hardening at $(date)" | sudo tee -a "$SCRIPT_LOG"
 
-## check if a package is installed (simpler)
-is_package_installed() {
-    dpkg -l "$1" | grep -q "^ii"
-}
-
-## log messages
-log() {
-    echo "$(date +"%Y-%m-%d %T") $1" | sudo tee -a "$SCRIPT_LOG"
-}
-
-## Verify if script is executed as root 
+## Check if-as root
 if [ "$(id -u)" -ne 0 ]; then
-    log "Error: Please re-run this script with sudo or as root."
+    echo "Error: Please re-run this script with sudo or as root." | sudo tee -a "$SCRIPT_LOG"
     exit 1
 fi
 
-## check if a command executed successfully
-check_success() {
-    if [ $? -ne 0 ]; then
-        log "Error: $1 failed. Exiting script."
-        exit 1
-    else
-        log "$1 completed successfully."
-    fi
-}
-
-## Exec extended, logging and checking command was good
+## Define utility functions
 exec_e() {
     "$@"
-    check_success "$1"
+    if [ $? -ne 0 ]; then
+        echo "Error: $1 failed. Exiting script." | sudo tee -a "$SCRIPT_LOG"
+        exit 1
+    fi
+    echo "$1 completed successfully." | sudo tee -a "$SCRIPT_LOG"
 }
 
 ## Update system 
-echo "Updating SEC_system packages..."
+echo "Updating system packages..."
 exec_e apt update && exec_e apt upgrade -yy
 
-## Install security tools (Podman, LXC, Firejail, etc.)
+## Install sec tools
 echo "Installing security tools..."
-exec_e apt install -yy \
-    podman \
-    firejail \
-    bubblewrap \
-    ufw \
-    fail2ban \
-    clamav \
-    lynis \
-    apparmor apparmor-utils
+exec_e apt install -yy podman firejail bubblewrap ufw fail2ban clamav lynis apparmor apparmor-utils
 
-## Check if Snap is installed install if not
+## Check for Snap
 if ! command -v snap &> /dev/null; then
-    log "SNAP not found. Installing Snap..."
-    exec_e sudo apt update
-    exec_e sudo apt install -y snapd
+    echo "SNAP not found. Installing Snap..." | sudo tee -a "$SCRIPT_LOG"
+    exec_e apt install -y snapd
 fi
 
-## Check if LXD is installed install if not
+## Install and spin up LXD
 if ! command -v lxd &> /dev/null; then
-    log "LXD not found. Installing LXD via Snap..."
-    exec_e sudo snap install lxd
-fi
-
-## Optional**** If you still want to add the PPA (for apt-based installation):
-if ! command -v lxd &> /dev/null; then
-    log "Adding LXD PPA..."
-    exec_e sudo apt install -y software-properties-common
-    exec_e sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable
-    exec_e sudo apt update
-    exec_e sudo apt install -y lxd
+    echo "LXD not found. Installing LXD via Snap..." | sudo tee -a "$SCRIPT_LOG"
+    exec_e snap install lxd
 fi
 
 ## Enable AppArmor
 echo "Enabling AppArmor..."
-exec_e sudo systemctl enable --now apparmor
+exec_e systemctl enable --now apparmor
 
-## Enable UFW  basic 
+## Configure UFW simply 
 echo "Setting up UFW firewall..."
-exec_e sudo ufw enable
-exec_e sudo ufw default deny incoming
-exec_e sudo ufw default allow outgoing
+exec_e ufw enable
+exec_e ufw default deny incoming
+exec_e ufw default allow outgoing
 
-# Ask user if SSH is needed and on what port
+# SSH and ask for port 
 read -p "Do you need SSH access? (y/n): " SSH_NEEDED
 if [[ "$SSH_NEEDED" == "y" ]]; then
     read -p "Enter inbound port for SSH (default 22): " SSH_PORT
-    SSH_PORT=${SSH_PORT:-22}  # Default to port 22 if not specified
-    read -p "Enter outbound port for SSH (default 22): " SSH_OUT_PORT
-    SSH_OUT_PORT=${SSH_OUT_PORT:-22}  # Default to port 22 if not specified
-    echo "Allowing SSH inbound and outbound on port $SSH_PORT and $SSH_OUT_PORT"
-    exec_e sudo ufw allow "$SSH_PORT"
-    exec_e sudo ufw allow out "$SSH_OUT_PORT"
+    SSH_PORT=${SSH_PORT:-22}
+    if [[ "$SSH_PORT" =~ ^[0-9]+$ && "$SSH_PORT" -ge 1 && "$SSH_PORT" -le 65535 ]]; then
+        exec_e ufw allow "$SSH_PORT"
+    else
+        echo "Invalid port. SSH configuration skipped."
+    fi
 else
     echo "SSH access is disabled."
 fi
 
-## Fail2Ban
+## Configure Fail2Ban
 echo "Enabling Fail2Ban..."
-exec_e sudo systemctl enable --now fail2ban
+exec_e systemctl enable --now fail2ban
 
-## ClamAV
+## Configure ClamAV
 echo "Setting up ClamAV..."
-exec_e sudo freshclam
-exec_e sudo clamscan -r / --log="$LOG_DIR/clamav_scan_$DATE.log"
+exec_e freshclam
+exec_e clamscan -r / --log="$LOG_DIR/clamav_scan_$DATE.log"
 
-## Lynis
+## Run Lynis (v) wpuld like to run as pentest later
 echo "Running Lynis system audit..."
-exec_e sudo lynis audit system | tee "$LOG_DIR/lynis_audit_$DATE.log"
+exec_e lynis audit system | tee "$LOG_DIR/lynis_audit_$DATE.log"
 
-## Podman 
+## Podman Containerization >> Firefox
 echo "Setting up Podman for Firefox container..."
-if ! is_package_installed podman; then
-    echo "Podman not installed, installing..."
-    exec_e sudo apt install -yy podman
+exec_e podman pull docker.io/jess/firefox
+exec_e podman run -it --rm --net=none docker.io/jess/firefox
+
+## Configure sysctl for kernel 
+echo "Applying sysctl hardening..."
+cat <<EOF | sudo tee /etc/sysctl.d/99-hardening.conf
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.tcp_syncookies = 1
+kernel.randomize_va_space = 2
+fs.protected_symlinks = 1
+fs.protected_hardlinks = 1
+EOF
+exec_e sysctl --system
+
+## Reboot prompt
+read -p "Reboot required to apply all changes. Reboot now? (y/n): " REBOOT
+if [[ "$REBOOT" == "y" ]]; then
+    sudo reboot
+else
+    echo "Please reboot manually to apply changes."
 fi
-
-# Pull Firefox container image
-echo "Pulling Firefox container image..."
-exec_e sudo podman pull jess/firefox
-
-# Run Firefox in a container with network isolation (trial, would say we need to containerize any web-based search engine if it's downloaded after the fact)
-echo "Running Firefox in a container (network isolation)..."
-exec_e sudo podman run -it --rm --net=none jess/firefox
-
-## LXC/LXD containerization *all
-echo "Setting up LXC/LXD containers..."
-if ! is_package_installed lxd; then
-    echo "LXD not installed, installing..."
-    exec_e sudo apt install -yy lxd lxd-client
-    exec_e sudo lxd init --auto
-fi
-
-# Create an LXC container for Firefox, only includes Firefox for now
-echo "Creating LXC container for Firefox..."
-exec_e sudo lxc launch ubuntu:20.04 firefox-container
-exec_e sudo lxc exec firefox-container -- apt update && sudo apt install -yy firefox
-exec_e sudo lxc exec firefox-container -- firefox
-
-## Firejail sandboxing for applications (Firefox example but make this default for any post downloaded search engine)
-echo "Setting up Firejail sandbox for Firefox..."
-exec_e firejail
