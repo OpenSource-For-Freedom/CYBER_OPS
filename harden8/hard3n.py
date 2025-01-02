@@ -67,13 +67,13 @@ log() {
     echo "$(date +"%Y-%m-%d %T") $1" | sudo tee -a "$SCRIPT_LOG"
 }
 
-# Verify if script is executed with root privileges
+# Verify if script using root 
 if [ "$(id -u)" -ne 0 ]; then
     log "Error: Please re-run this script with sudo or as root."
     exit 1
 fi
 
-# check if a command executed successfully
+# check if successfully
 check_success() {
     if [ $? -ne 0 ]; then
         log "Error: $1 failed. Exiting script."
@@ -93,7 +93,7 @@ exec_e() {
 echo "Updating SEC_system packages..."
 exec_e apt update && exec_e apt upgrade -yy
 
-# Install security tools (Podman, LXC, Firejail, yeet:))
+# Install security tools 
 echo "Installing security tools..."
 exec_e apt install -yy \
     podman \
@@ -104,6 +104,28 @@ exec_e apt install -yy \
     clamav \
     lynis \
     apparmor apparmor-utils
+
+
+## Enable Google MFA 
+echo "Setting up Google MFA for Login..."
+
+# Install libpam-google-authenticator so long as user has it...
+exec_e apt install -y libpam-google-authenticator
+
+# Configure PAM for MFA
+echo "auth required pam_google_authenticator.so" | sudo tee -a /etc/pam.d/sshd
+
+# Ensure SSH supports Challenge-Response Authentication
+sed -i 's/^#ChallengeResponseAuthentication.*/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
+sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+sed -i 's/^UsePAM.*/UsePAM yes/' /etc/ssh/sshd_config
+
+# Restart SSH service
+exec   ``  systemctl restart sshd
+
+# User setup instructions
+echo "To enable MFA for a user, log in as that user and run: google-authenticator"
+echo "Follow the on-screen instructions to configure your MFA."
 
 # Check if Snap is installed
 if ! command -v snap &> /dev/null; then
