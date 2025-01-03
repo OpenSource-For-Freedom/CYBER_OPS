@@ -132,3 +132,5 @@ Test the system in a staging environment.
 Schedule a final review before release.
 
 ##                        Security First, Open Source for Freedom 🛡️
+
+<img src="https://t.bkit.co/w_67775e3ddda15.gif" />
