@@ -41,7 +41,7 @@ The **Linux** repository is dedicated to enhancing the security and functionalit
 
 #                                      **Overview**
 
-###       As a Linux Systemand Security Engineer its desired to pursue both Security and 
+###       As a Linux System and Security Engineer it's you must pursue Security and 
 ###  creativity. In the development of this repository we want to include all facits of Kernal Hardening, 
 ###         Penetration testing and OS Security for Debian Linux Systems and not forget our roots.  
 
