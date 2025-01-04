@@ -121,7 +121,7 @@ sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_co
 sed -i 's/^UsePAM.*/UsePAM yes/' /etc/ssh/sshd_config
 
 # Restart SSH service
-exec   ``  systemctl restart sshd
+exec_e systemctl restart sshd
 
 # User setup instructions
 echo "To enable MFA for a user, log in as that user and run: google-authenticator"
@@ -227,9 +227,3 @@ exec_e bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all --bind /home/$U
 log "System hardening complete. All security measures are now in place."
 
 # Prompt to reboot
-read -p "MUST reboot to apply HARD3N8 updates and changes? (y/n): " REBOOT_NOW
-if [[ "$REBOOT_NOW" == "y" ]]; then
-    exec_e sudo reboot
-else
-    echo "Reboot the system to ensure all packages, files, and containerization can take full effect."
-fi

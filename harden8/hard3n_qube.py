@@ -3,40 +3,51 @@
 import os
 import subprocess
 import sys
+import logging
 
-# run error handling
+# Setup logging
+logging.basicConfig(filename="/var/log/hard3n_qube.log", level=logging.INFO,
+                    format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger()
+
+# run handling
 def run_command(command, description=""):
+    logger.info(f"[+] {description}")
     print(f"[+] {description}")
     try:
         result = subprocess.run(command, shell=True, text=True, check=True, capture_output=True)
         if result.stdout:
+            logger.info(result.stdout)
             print(result.stdout)
         if result.stderr:
+            logger.error(f"[-] Error: {result.stderr}")
             print(f"[-] Error: {result.stderr}")
     except subprocess.CalledProcessError as e:
+        logger.error(f"[-] Error: {description} failed. {e.stderr}")
         print(f"[-] Error: {description} failed. {e.stderr}")
         sys.exit(1)
 
-# Verify root
+# Verify higher
 if os.geteuid() != 0:
+    logger.error("This script must be run as root. Please use 'sudo'.")
     print("[-] This script must be run as root. Please use 'sudo'.")
     sys.exit(1)
 
-# Step 1: Lock down the NIC
+# Lock down NIC, spin up TOR, DNS, and extra steps
 def lockdown_nic():
     print("[+] Locking down the NIC...")
     run_command("nmcli networking off", "Disabling all networking via NetworkManager")
     run_command("ip link set lo up", "Enabling loopback interface")
     print("[+] NIC locked down. Only loopback interface is active.")
 
-# Step 2: Configure TOR with Snowflake bridge
+# Configure TOR with Snowflake bridge
 def configure_tor():
     print("[+] Configuring TOR with Snowflake bridge...")
 
-    # Install TOR and Snowflake not installed
+    # Install TOR and Snowflake
     run_command("apt update && apt install -y tor snowflake-client", "Installing TOR and Snowflake client")
 
-    # slap in TOR configuration
+    # TOR configuration
     torrc_content = """
 ClientTransportPlugin snowflake exec /usr/bin/snowflake-client
 UseBridges 1
@@ -51,11 +62,9 @@ TransPort 9040
     run_command("systemctl restart tor", "Restarting TOR service")
     print("[+] TOR configured with Snowflake bridge.")
 
-# Step 3: Set loopback as DNS that works with TOR
+# Configure DNS for loopback (127.0.0.1)
 def configure_dns_loopback():
     print("[+] Configuring loopback as DNS...")
-
-    # Ensure that the DNS queries go through TOR (127.0.0.1 is the default for TOR DNS resolution) important***
     resolv_conf_content = """
 # TOR DNS
 nameserver 127.0.0.1
@@ -65,62 +74,13 @@ nameserver 127.0.0.1
     
     print("[+] DNS configured to use loopback (127.0.0.1).")
 
-# Step 4: Containerize browser activity
+# Containerize browser activity + need to add it fro chrome and safari
 def containerize_browser():
     print("[+] Containerizing browser activity...")
-    # Ensure Firejail is installed
     run_command("apt install -y firejail", "Installing Firejail sandboxing tool")
-    
-    # Run Firefox in Firejail
     browser_container_command = "firejail --net=none firefox"
     print(f"[+] Browser container command: {browser_container_command}")
-    print("[+] To launch the browser, run the above command manually.")
-    # you can uncomment the next line to auto-launch the browser in a container:
-    # run_command(browser_container_command, "Launching browser in Firejail")
 
-# Step 5: Disable web-based downloads
+# Block web-based downloads
 def block_web_downloads():
-    print("[+] Blocking web-based downloads...")
-    iptables_rules = [
-        "iptables -A OUTPUT -p tcp --dport 80 -j REJECT",
-        "iptables -A OUTPUT -p tcp --dport 443 -j REJECT",
-    ]
-    for rule in iptables_rules:
-        run_command(rule, f"Applying rule: {rule}")
-    print("[+] Web-based downloads are blocked.")
-
-# Step 6: TCPDump for Network Monitoring
-def setup_tcpdump():
-    print("[+] Setting up tcpdump for network monitoring...")
-    # Install tcpdump
-    run_command("apt install -y tcpdump", "Installing tcpdump")
-    
-    # Start tcpdump with a 12MB log limit max with recycle
-    tcpdump_command = (
-        "tcpdump -i lo -w /var/log/tcpdump_log.pcap -C 12 -Z root"
-    )
-    print(f"[+] Tcpdump command: {tcpdump_command}")
-    print("[+] Tcpdump will log up to 12MB in /var/log/tcpdump_log.pcap.")
-    # Uncomment the next line to start tcpdump automatically:
-    # run_command(tcpdump_command, "Starting tcpdump")
-
-# run all steps
-def main():
-    print("[+] Hard3n_Qube.py starting...")
-    
-    # Step 0: Ensure HARD3N.sh has run (manual validation for now)
-    print("[!] Please ensure HARD3N.sh has completed before running this script.")
-    input("Press Enter to continue if HARD3N.sh has finished, or Ctrl+C to exit.")
-
-    # Run all steps
-    lockdown_nic()
-    configure_tor()
-    configure_dns_loopback()
-    containerize_browser()
-    block_web_downloads()
-    setup_tcpdump()
-    
-    print("[+] Hard3n_Qube.py completed successfully.")
-
-if __name__ == "__main__":
-    main()
+    print
