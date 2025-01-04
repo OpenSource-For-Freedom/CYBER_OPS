@@ -22,7 +22,7 @@ echo ""
 echo ""
 echo ""
 
-#  enable known mitigations for CPU vulnerabilities @kiu :) + @whonix
+# Enable known mitigations for CPU vulnerabilities
 enable_cpu_mitigations() {
     echo "Enabling known mitigations for CPU vulnerabilities..."
 
@@ -37,7 +37,7 @@ enable_cpu_mitigations() {
     echo "CPU mitigations enabled and GRUB configuration updated."
 }
 
-# Ensure the script is executed with root privileges
+# Ensure root privileges
 if [ "$(id -u)" -ne 0 ]; then
     echo "Error: Please run this script as root or using sudo."
     exit 1
@@ -55,25 +55,25 @@ sudo mkdir -p "$LOG_DIR"
 DATE=$(date +"%Y%m%d_%H%M%S")
 SCRIPT_LOG="$LOG_DIR/script_execution_$DATE.log"
 
-echo "Starting system hard3ning at $(date)" | sudo tee -a "$SCRIPT_LOG"
+echo "Starting system hardening at $(date)" | sudo tee -a "$SCRIPT_LOG"
 
-# check if a package is installed (simpler)
+# Check if a package is installed (simpler)
 is_package_installed() {
     dpkg -l "$1" | grep -q "^ii"
 }
 
-# log messages
+# Log messages
 log() {
     echo "$(date +"%Y-%m-%d %T") $1" | sudo tee -a "$SCRIPT_LOG"
 }
 
-# Verify if script using root 
+# Verify if script is using root
 if [ "$(id -u)" -ne 0 ]; then
     log "Error: Please re-run this script with sudo or as root."
     exit 1
 fi
 
-# check if successfully
+# Check if successful
 check_success() {
     if [ $? -ne 0 ]; then
         log "Error: $1 failed. Exiting script."
@@ -83,33 +83,23 @@ check_success() {
     fi
 }
 
-# Exec extended, logging and checking command was successful
+# Exec extended, check succesful 
 exec_e() {
-    "$@"
-    check_success "$1"
+    "$@"; check_success "$1"
 }
 
 # Update system packages
 echo "Updating SEC_system packages..."
-exec_e apt update && exec_e apt upgrade -yy
+exec_e apt update; exec_e apt upgrade -yy
 
 # Install security tools 
 echo "Installing security tools..."
-exec_e apt install -yy \
-    podman \
-    firejail \
-    bubblewrap \
-    ufw \
-    fail2ban \
-    clamav \
-    lynis \
-    apparmor apparmor-utils
+exec_e apt install -yy podman; exec_e apt install -yy firejail; exec_e apt install -yy bubblewrap; exec_e apt install -yy ufw; exec_e apt install -yy fail2ban; exec_e apt install -yy clamav; exec_e apt install -yy lynis; exec_e apt install -yy apparmor apparmor-utils
 
-
-## Enable Google MFA 
+# Enable Google MFA 
 echo "Setting up Google MFA for Login..."
 
-# Install libpam-google-authenticator so long as user has it...
+# Install libpam-google-authenticator so long as user has it... if not.... R.I.P 
 exec_e apt install -y libpam-google-authenticator
 
 # Configure PAM for MFA
@@ -130,8 +120,7 @@ echo "Follow the on-screen instructions to configure your MFA."
 # Check if Snap is installed
 if ! command -v snap &> /dev/null; then
     log "SNAP not found. Installing Snap..."
-    exec_e sudo apt update
-    exec_e sudo apt install -y snapd
+    exec_e sudo apt update; exec_e sudo apt install -y snapd
 fi
 
 # Check if LXD is installed
@@ -140,24 +129,19 @@ if ! command -v lxd &> /dev/null; then
     exec_e sudo snap install lxd
 fi
 
-# Optional: If you still want to add the PPA (for apt-based installation):
+# Optional: If you still want to add the PPA 
 if ! command -v lxd &> /dev/null; then
     log "Adding LXD PPA..."
-    exec_e sudo apt install -y software-properties-common
-    exec_e sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable
-    exec_e sudo apt update
-    exec_e sudo apt install -y lxd
+    exec_e sudo apt install -y software-properties-common; exec_e sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable; exec_e sudo apt update; exec_e sudo apt install -y lxd
 fi
 
 # Enable AppArmor
 echo "Enabling AppArmor..."
 exec_e sudo systemctl enable --now apparmor
 
-# Enable UFW (Uncomplicated Firewall but no specific ports)
+# Enable UFW 
 echo "Setting up UFW firewall..."
-exec_e sudo ufw enable
-exec_e sudo ufw default deny incoming
-exec_e sudo ufw default allow outgoing
+exec_e sudo ufw enable; exec_e sudo ufw default deny incoming; exec_e sudo ufw default allow outgoing
 
 # Ask user if SSH is needed and on what port
 read -p "Do you need SSH access? (y/n): " SSH_NEEDED
@@ -167,8 +151,7 @@ if [[ "$SSH_NEEDED" == "y" ]]; then
     read -p "Enter outbound port for SSH (default 22): " SSH_OUT_PORT
     SSH_OUT_PORT=${SSH_OUT_PORT:-22}  # Default to port 22 if not specified
     echo "Allowing SSH inbound and outbound on port $SSH_PORT and $SSH_OUT_PORT"
-    exec_e sudo ufw allow "$SSH_PORT"
-    exec_e sudo ufw allow out "$SSH_OUT_PORT"
+    exec_e sudo ufw allow "$SSH_PORT"; exec_e sudo ufw allow out "$SSH_OUT_PORT"
 else
     echo "SSH access is disabled."
 fi
@@ -179,8 +162,7 @@ exec_e sudo systemctl enable --now fail2ban
 
 # ClamAV
 echo "Setting up ClamAV..."
-exec_e sudo freshclam
-exec_e sudo clamscan -r / --log="$LOG_DIR/clamav_scan_$DATE.log"
+exec_e sudo freshclam; exec_e sudo clamscan -r / --log="$LOG_DIR/clamav_scan_$DATE.log"
 
 # Lynis
 echo "Running Lynis system audit..."
@@ -205,15 +187,12 @@ exec_e sudo podman run -it --rm --net=none jess/firefox
 echo "Setting up LXC/LXD containers..."
 if ! is_package_installed lxd; then
     echo "LXD not installed, installing..."
-    exec_e sudo apt install -yy lxd lxd-client
-    exec_e sudo lxd init --auto
+    exec_e sudo apt install -yy lxd lxd-client; exec_e sudo lxd init --auto
 fi
 
 # Create an LXC container for Firefox 
 echo "Creating LXC container for Firefox..."
-exec_e sudo lxc launch ubuntu:20.04 firefox-container
-exec_e sudo lxc exec firefox-container -- apt update && sudo apt install -yy firefox
-exec_e sudo lxc exec firefox-container -- firefox
+exec_e sudo lxc launch ubuntu:20.04 firefox-container; exec_e sudo lxc exec firefox-container -- apt update && sudo apt install -yy firefox; exec_e sudo lxc exec firefox-container -- firefox
 
 # Firejail sandboxing for applications 
 echo "Setting up Firejail sandbox for Firefox..."
