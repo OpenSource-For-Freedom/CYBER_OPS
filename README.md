@@ -22,8 +22,8 @@
 ```
 
 
-###                             ***Developer: Tim Burns***
-                                 Contact: Support@grdv.org
+##                                       ***Developer: Tim Burns***
+##                                    ***Contact: Support@grdv.org***
 
 ##                     
 
@@ -35,11 +35,11 @@
 ## Crack - a Wifi (WPA-WPA2) Pen Testing tool for looking for vulnerabiites 
 
 
-###                    			 Welcome! 
+###                    			       Welcome! 
 
 The **Linux** repository is dedicated to enhancing the security and functionality of Linux systems and Supported OS models and Networks. 
 
-#                                      **Overview**
+#                                            **Overview**
 
 ###       As a Linux System and Security Engineer it's you must pursue Security and 
 ###  creativity. In the development of this repository we want to include all facits of Kernal Hardening, 
@@ -49,34 +49,34 @@ This document outlines the **pre-release activities** that need to be completed 
 
 We’ve included detailed descriptions for each task to give you a better understanding of their importance. With this, you’ll be ready to dive deep into Debian system hardening and optimization, ensuring your system is secure,  a tight button of fun, stable, and efficient. Availability and Security is our goal. 
 
-#                           Task List: Pre-Release Activities 
+#                                  Task List: Pre-Release Activities 
 
-##                             System Hardening Research 
+##                                    System Hardening Research 
 
 ### Review and Analyze Hardening Scripts:
 Study successful system hardening scripts like harbian-audit. These scripts provide a blueprint for how security measures should be structured, implemented, and executed across Linux systems.
 ***Objective*** To understand their structure, logic, and methods for mitigating security vulnerabilities, and apply them in our own hardening process.
 ***Importance*** Ensures we are adopting best practices in system hardening that are widely recognized and tested in the security community.
 
-##                                Permission Security 
+##                                      Permission Security 
 
 ### Evaluate Special Permissions:
 Special file permissions like setuid, setgid, and sticky have specific implications for system security. We need to carefully evaluate the risk of removing these from executables.
 ***Objective***  Safely remove or modify unnecessary special permissions to reduce potential attack surfaces.
 ***Note*** Incorrect changes could compromise system stability. Always perform tests in a controlled environment first.
 
-##                              User Group Configuration 
+##                                  User Group Configuration 
 
 ### Console User Group Analysis in Whonix:
 Whonix is a security-focused Linux distribution that uses anonymity via Tor. Within Whonix, the console user group plays a role in user management and system access.
 ***Objective*** Investigate the necessity of this group, explore any potential for improvements, and evaluate whether additional user groups might improve security.
 ***Importance*** Proper user group management helps reduce the potential for privilege escalation and unauthorized access.
 		
-##                               Security Enhancements 
+##                                  Security Enhancements 
 
 ### Track and Document Setgid Permissions (Idea)
 
-***                             Run the following command***
+***                              Run the following command***
 
 ```
 find / -mount -perm -2000 -type f -exec ls -ld {} \; > /home/user/setgid_.txt && chown -v user:user /home/user/setgid_.txt
