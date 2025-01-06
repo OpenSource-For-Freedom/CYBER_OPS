@@ -27,13 +27,16 @@
 
 ##                     
 
-
+---
 
 #                                  **The Linux + DevSec Project**: 
 > ***Hard3n*** - A single Linux Packae to Sandbox a Debian OS and supported systems, both endpoint and Server.
-> ***VeriFY*** - a Pen Testing tool to export network scans to automate and acknowledge when ports and access are weak.
-> ***Crack*** - a Wifi (WPA-WPA2) Pen Testing tool for looking for vulnerabiites 
 
+> ***VeriFY*** - a Pen Testing tool to export network scans to automate and acknowledge when ports and access are weak.
+
+> ***Crack*** - a Wifi (WPA-WPA2) Pen Testing tool for looking for vulnerabiites
+
+---
 
 ###                    			       Welcome! 
 
