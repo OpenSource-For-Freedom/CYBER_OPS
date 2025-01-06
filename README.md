@@ -35,7 +35,7 @@
 ## Crack
 
 
-###                    Welcome to The Linux Hardening and Security Arena! 
+###                    			Welcome! 
 
 The **Linux** repository is dedicated to enhancing the security and functionality of Linux systems.
 
@@ -74,7 +74,7 @@ Whonix is a security-focused Linux distribution that uses anonymity via Tor. Wit
 		
 ##                               Security Enhancements 
 
-### Track and Document Setgid Permissions
+### Track and Document Setgid Permissions (Idea)
 
 ***                             Run the following command***
 
@@ -88,6 +88,9 @@ This command will locate all files with setgid permissions and save them to a fi
 Note: Misconfigured setgid files can lead to privilege escalation vulnerabilities. This process helps ensure only legitimate files have these permissions.
 
 ##                                Ongoing Configurations 
+### 		       There is great need to continue finding and testing 
+###                      the "best" hardening scripts and polices as a 
+###                                     Collective
 
 ### Modify Security Settings:
 Explore security configuration files located in /etc/security and /etc/host.conf. Modify them to enhance system hardening.
