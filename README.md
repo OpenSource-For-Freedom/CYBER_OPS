@@ -22,7 +22,7 @@
 ```
 
 
-###                             ***Developers: Tim Burns***
+###                             ***Developer: Tim Burns***
                                  Contact: Support@grdv.org
 
 ##                     
