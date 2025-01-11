@@ -2,12 +2,7 @@
 
 
 ```bash
-                      ####################################################################
-                      #            H   H   AAAAA   RRRR    DDDD    333333    NN    N     #     
-                      #           H   H  A     A  R   R   D   D       33    N N   N      #  
-                      #          HHHHH  AAAAAAA  RRRR    D   D     33      N  N  N       # 
-                      #         H   H  A     A  R  R    D   D       33    N   N N        #    
-                      #        H   H  A     A  R   R   DDDD    333333    N    NN         #
+             
                       ####################################################################
                       ##             "HARD3N" - The Linux Security Project              ##          
                       ##            ----------------------------------------            ##          
