@@ -1,35 +1,23 @@
 ![Header](github-header-image.png)
 
 
-```bash
-                      ####################################################################                                    
-                      ##                     License: MIT License                       ##   
-                      ##                        Version: 1.3.1                          ##     
-                      ##  GitHub: https://github.com/OpenSource-For-Freedom/Linux.git   ## 
-                      ##                                                                ##
-                      ####################################################################
-```
-
-
 ##                                       ***Developer: Tim Burns***
 ##                                    ***Contact: Support@grdv.org***          
 
 
 
 #                                     **The Linux + DevSec Project**: 
-> ***Hard3n*** - A single Linux Package to Sandbox a Debian OS and supported systems, both endpoint and Server.
-
-
+### ***Hard3n*** - A single Linux Package to Sandbox a Debian OS and support systems, both endpoint and Server.
 
 
 ###                    			       Welcome! 
 
 The **Linux** repository is dedicated to enhancing the security and functionality of Linux systems and Supported OS models and Networks. 
 
-#                                            **Overview**
+#                                            ***Overview***
 
 ###       As a Linux System and Security Engineer it's you must pursue Security and 
-###  creativity. In the development of this repository we want to include all facits of Kernal Hardening, 
+###  creativity. In the development of this repository, we want to include all facets of Kernal Hardening, 
 ###         Penetration testing and OS Security for Debian Linux Systems and not forget our root.
 
 This document outlines the **pre-release activities** that need to be completed before we finalize the project release. These tasks are designed to reinforce the system's security posture, improve performance, and streamline user management.
@@ -86,14 +74,14 @@ Note: Misconfigured setgid files can lead to privilege escalation vulnerabilitie
 ### Modify Security Settings:
 Explore security configuration files located in /etc/security and /etc/host.conf. Modify them to enhance system hardening and enable grub updating and hardeing. 
 
-***Objective*** : Tighten system settings and prevent unauthorized access or privilege escalation.
+***Objective***: Tighten system settings and prevent unauthorized access or privilege escalation.
 
 ***Example Configurations***
 
 > Configure password expiration policies.
 ```
 # -M 90= sets the max days, -m 7= sets the minimum days a password can be changed, -A 14= that is the warning period before expiration
-# all settigns can be adjusted to the admin spec or users preference. 
+# all settings can be adjusted to the admin spec or users preference. 
 
 sudo chage -M 90 -m 7 -W 14 username 
 ```
