@@ -2,22 +2,9 @@
 
 
 ```bash
-                      ####################################################################
-                      #            H   H   AAAAA   RRRR    DDDD    333333    NN    N     #     
-                      #           H   H  A     A  R   R   D   D       33    N N   N      #  
-                      #          HHHHH  AAAAAAA  RRRR    D   D     33      N  N  N       # 
-                      #         H   H  A     A  R  R    D   D       33    N   N N        #    
-                      #        H   H  A     A  R   R   DDDD    333333    N    NN         #
-                      ####################################################################
-                      ##             "HARD3N" - The Linux Security Project              ##          
-                      ##            ----------------------------------------            ##          
-                      ##           A project focused on improving Debian Linux          ##          
-                      ##            security through automating, containerizing         ##         
-                      ##                        Hardening and                           ##        
-                      ##                 System protection measures.                    ##         
-                      ##           ----------------------------------------             ##                                       
+                      ####################################################################                                    
                       ##                     License: MIT License                       ##   
-                      ##                        Version: 1.3                            ##     
+                      ##                        Version: 1.3.1                          ##     
                       ##  GitHub: https://github.com/OpenSource-For-Freedom/Linux.git   ## 
                       ##                                                                ##
                       ####################################################################
@@ -33,7 +20,6 @@
 > ***Hard3n*** - A single Linux Package to Sandbox a Debian OS and supported systems, both endpoint and Server.
 
 
----
 
 
 ###                    			       Welcome! 
@@ -228,14 +214,14 @@ sudo sysctl -p
 ##                            Other Critical Pre-Release Steps 
 
 ***Audit Logs*** Make sure logging and monitoring configurations are enabled. Set up automated log analysis to quickly detect suspicious activity.
-***Backup & Recovery Plan*** Ensure a backup strategy is in place for both system configurations and critical data.
+***Backup & Recovery Plan *** Please make sure a backup strategy is in place for both system configurations and critical data.
 ***Test*** Before finalizing the release, thoroughly test all security measures in a staging environment. This ensures the changes won't break functionality or introduce new issues.
-***CRONJOB*** Empliment a cronjob for updating, monitring and change orders needed if users desire diffent containerization, secirity or Kernal monitoring. 
+***CRONJOB*** Empliment a cronjob for updating, monitoring, and changing orders needed if users desire different containerization, security, or Kernal monitoring. 
 
 
 
 
-##                            System Hardening Tools to Implimented 
+##                            System Hardening Tools to be Implemented 
 
 Here are some tools you may want to use as part of the hardening process:
 
@@ -252,14 +238,14 @@ By completing the tasks outlined above, we will ensure that the Hard3n_Linux pro
 
 Let's keep the security momentum going, and prepare for the exciting release of Hard3n_Linux! 🚀
 
-##                                 Take Aways and Next Steps
+##                                 Takeaways and Next Steps
 
 Complete the tasks above with attention to detail.
 Document any changes made during the hardening process for future reference.
 Test the system in a staging environment.
 Schedule a final review before release.
 
-##                        Security First, Open Source for Freedom 🛡️
+##                        Security First! and always stay: Open Source for Freedom 🛡️
 
 
 ![Header](octocat-1736601186918.png)           
