@@ -23,11 +23,16 @@
 
 
 ##                                       ***Developer: Tim Burns***
-##                                    ***Contact: Support@grdv.org***                  
+##                                    ***Contact: Support@grdv.org***          
+
+
 
 #                                     **The Linux + DevSec Project**: 
 > ***Hard3n*** - A single Linux Package to Sandbox a Debian OS and supported systems, both endpoint and Server.
+
+
 ---
+
 
 ###                    			       Welcome! 
 
@@ -37,40 +42,43 @@ The **Linux** repository is dedicated to enhancing the security and functionalit
 
 ###       As a Linux System and Security Engineer it's you must pursue Security and 
 ###  creativity. In the development of this repository we want to include all facits of Kernal Hardening, 
-###         Penetration testing and OS Security for Debian Linux Systems and not forget our roots.  
+###         Penetration testing and OS Security for Debian Linux Systems and not forget our root.
 
 This document outlines the **pre-release activities** that need to be completed before we finalize the project release. These tasks are designed to reinforce the system's security posture, improve performance, and streamline user management.
 
 We’ve included detailed descriptions for each task to give you a better understanding of their importance. With this, you’ll be ready to dive deep into Debian system hardening and optimization, ensuring your system is secure,  a tight button of fun, stable, and efficient. Availability and Security is our goal. 
 
-#                                  Task List: Pre-Release Activities 
+##                             Task List: Pre-Release Activities / Research
 
-##                                    System Hardening Research 
+##                                    [System Hardening Research] 
 
 ### Review and Analyze Hardening Scripts:
-Study successful system hardening scripts like harbian-audit. These scripts provide a blueprint for how security measures should be structured, implemented, and executed across Linux systems.
-***Objective*** To understand their structure, logic, and methods for mitigating security vulnerabilities, and apply them in our own hardening process.
-***Importance*** Ensures we are adopting best practices in system hardening that are widely recognized and tested in the security community.
+Study functional system hardening scripts like harbian-audit. These scripts provide a blueprint for how security measures should be structured, implemented, and executed across Linux systems.
 
-##                                      Permission Security 
+***Objective*** To understand their structure, logic, and methods for mitigating security vulnerabilities, and apply them in our own hardening process.
+
+***Importance*** Ensures we are adopting best practices in system hardening that are widely recognized and tested in the security community that will
+All Production and Security to live in one biome. 
+
+##                                      [Permission Security] 
 
 ### Evaluate Special Permissions:
 Special file permissions like setuid, setgid, and sticky have specific implications for system security. We need to carefully evaluate the risk of removing these from executables.
 ***Objective***  Safely remove or modify unnecessary special permissions to reduce potential attack surfaces.
 ***Note*** Incorrect changes could compromise system stability. Always perform tests in a controlled environment first.
 
-##                                  User Group Configuration 
+##                                    [User Group Configuration] 
 
 ### Console User Group Analysis in Whonix:
 Whonix is a security-focused Linux distribution that uses anonymity via Tor. Within Whonix, the console user group plays a role in user management and system access.
 ***Objective*** Investigate the necessity of this group, explore any potential for improvements, and evaluate whether additional user groups might improve security.
 ***Importance*** Proper user group management helps reduce the potential for privilege escalation and unauthorized access.
 		
-##                                  Security Enhancements 
+##                                     [Security Enhancements] 
 
 ### Track and Document Setgid Permissions (Idea)
 
-***                              Run the following command***
+###                                 ***Run the following command***
 
 ```
 find / -mount -perm -2000 -type f -exec ls -ld {} \; > /home/user/setgid_.txt && chown -v user:user /home/user/setgid_.txt
@@ -81,20 +89,139 @@ This command will locate all files with setgid permissions and save them to a fi
 ***Objective*** Review files with elevated permissions and document them for further analysis.
 Note: Misconfigured setgid files can lead to privilege escalation vulnerabilities. This process helps ensure only legitimate files have these permissions.
 
-##                                Ongoing Configurations 
+##                                [Ongoing Future Configurations] 
+
 ### 		       There is great need to continue finding and testing 
 ###                      the "best" hardening scripts and polices as a 
 ###                                     Collective
 
 ### Modify Security Settings:
-Explore security configuration files located in /etc/security and /etc/host.conf. Modify them to enhance system hardening.
+Explore security configuration files located in /etc/security and /etc/host.conf. Modify them to enhance system hardening and enable grub updating and hardeing. 
+
 ***Objective*** : Tighten system settings and prevent unauthorized access or privilege escalation.
+
 ***Example Configurations***
+
 > Configure password expiration policies.
+```
+# -M 90= sets the max days, -m 7= sets the minimum days a password can be changed, -A 14= that is the warning period before expiration
+# all settigns can be adjusted to the admin spec or users preference. 
+
+sudo chage -M 90 -m 7 -W 14 username 
+```
 > Restrict sudo permissions.
-> Sandbox .grub and enable secure updating. 
+```
+sudo visudo # to edit sudo user
+```
+```
+username ALL=(ALL) ALL, !/bin/su, !/usr/bin/passwd # java that allows sudo most, but restircts /bin/su and /usr/bin/passed
+```
+
+> Sandbox .grub and enable secure updating
+> Using AppArmor :)
+```
+sudo apt install apparmor
+sudo systemctl enable apparmor
+sudo systemctl start apparmor
+```
+```
+sudo nano /etc/apparmor.d/usr.sbin.grub
+```
+```
+/usr/sbin/grub2-mkconfig ixr,
+/usr/sbin/grub-install ixr,
+/etc/grub.d/** r,
+/boot/grub/** rw,
+/dev/sda r,
+```
+```
+sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.grub
+```
+> Allow Grub updating
+```
+sudo apt install unattended-upgrades
+```
+> Edit the apt.conf.d file
+```
+sudo nano /etc/apt/apt.conf.d/50unattended-upgrades
+```
+> Add this linefor Grub updating
+```
+"Package-Blacklist": {
+    // Leave blank to allow all packages, or blacklist specific ones
+},
+"Allowed-Origins": {
+    "Debian": "${distro_id}:${distro_codename}-updates";
+}
+
+```
+> Then Allow Unatended Upgrade
+```
+sudo dpkg-reconfigure -plow unattended-upgrades
+```
+> Update Grub
+```
+sudo update-grub
+```
+Restirct Certian Grub files so only root has access
+```
+sudo chmod 600 /boot/grub/grub.cfg
+sudo chown root:root /boot/grub/grub.cfg
+sudo chmod -R 700 /etc/grub.d/
+```
+> Verify
+```
+ls -l /boot/grub/
+ls -l /etc/grub.d/
+```
+
 > Enforce account lockout after a number of failed login attempts.
-> Review and tighten settings in host.conf for network security.
+
+> Open PAM
+```
+sudo nano /etc/pam.d/common-auth
+
+```
+> Add this line on the top
+
+```
+auth required pam_tally2.so deny=3 unlock_time=300
+```
+> Mod PAM account file
+```
+sudo nano /etc/pam.d/common-account
+```
+> Add this at top
+```
+account required Linux_User_1.so
+```
+> The verify User account Lockout policy
+
+> Harden Netowkr Parameters using Kernal
+
+> Open
+```
+sudo nano /etc/systctl.conf
+```
+> Add this to the file
+```
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.tcp_syncookies = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+net.ipv4.tcp_timestamps = 0
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv6.conf.all.accept_source_route = 0
+net.ipv6.conf.default.accept_source_route = 0
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv6.conf.default.accept_redirects = 0
+```
+> Apply the change
+```
+sudo sysctl -p
+```
 
 ##                            Other Critical Pre-Release Steps 
 
@@ -102,6 +229,8 @@ Explore security configuration files located in /etc/security and /etc/host.conf
 ***Backup & Recovery Plan*** Ensure a backup strategy is in place for both system configurations and critical data.
 ***Test*** Before finalizing the release, thoroughly test all security measures in a staging environment. This ensures the changes won't break functionality or introduce new issues.
 ***CRONJOB*** Empliment a cronjob for updating, monitring and change orders needed if users desire diffent containerization, secirity or Kernal monitoring. 
+
+
 
 
 ##                            System Hardening Tools to Implimented 
