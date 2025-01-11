@@ -16,8 +16,7 @@ The **Linux** repository is dedicated to enhancing the security and functionalit
 
 #                                            ***Overview***
 
-###       As a Linux System and Security Engineer it's you must pursue Security and 
-###  creativity. In the development of this repository, we want to include all facets of Kernal Hardening, 
+###       In the development of this repository, we want to include all facets of Kernal Hardening, 
 ###         Penetration testing and OS Security for Debian Linux Systems and not forget our root.
 
 This document outlines the **pre-release activities** that need to be completed before we finalize the project release. These tasks are designed to reinforce the system's security posture, improve performance, and streamline user management.
