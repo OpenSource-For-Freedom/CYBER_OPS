@@ -27,7 +27,6 @@
 > ***Hard3n*** - A single Linux Package to Sandbox a Debian OS and supported systems, both endpoint and Server.
 
 
----
 
 
 ###                    			       Welcome! 
