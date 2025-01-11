@@ -2,16 +2,9 @@
 
 
 ```bash
-                      ####################################################################
-                      ##             "HARD3N" - The Linux Security Project              ##          
-                      ##            ----------------------------------------            ##          
-                      ##           A project focused on improving Debian Linux          ##          
-                      ##            security through automating, containerizing         ##         
-                      ##                        Hardening and                           ##        
-                      ##                 System protection measures.                    ##         
-                      ##           ----------------------------------------             ##                                       
+                      ####################################################################                                    
                       ##                     License: MIT License                       ##   
-                      ##                        Version: 1.3                            ##     
+                      ##                        Version: 1.3.1                          ##     
                       ##  GitHub: https://github.com/OpenSource-For-Freedom/Linux.git   ## 
                       ##                                                                ##
                       ####################################################################
