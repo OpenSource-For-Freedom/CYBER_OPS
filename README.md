@@ -261,4 +261,7 @@ Schedule a final review before release.
 
 ##                        Security First, Open Source for Freedom 🛡️
 
+
+![Header](octocat-1736601186918.png)           
+
 <img src="https://t.bkit.co/w_67775e3ddda15.gif" />
