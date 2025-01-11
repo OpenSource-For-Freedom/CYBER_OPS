@@ -1,229 +1,176 @@
-#!/bin/bash
+import os
+import subprocess
+import shutil
+import sys
+import logging
+from datetime import datetime
+import argparse
 
 # Print the ASCII art and text
-echo "        -----------------------------------------------------------------------"
-echo "                    H   H   AAAAA   RRRR    DDDD    333333    NN    N"
-echo "          ======== H   H  A     A  R   R   D   D       33    N N   N" ('=======')
-echo "          ======= HHHHH  AAAAAAA  RRRR    D   D     33      N  N  N" ('========')
-echo "          ====== H   H  A     A  R  R    D   D       33    N   N N" ('=========')
-echo "                H   H  A     A  R   R   DDDD    333333    N    NN"
-echo "        -----------------------------------------------------------------------"
-echo "                    \"HARD3N\" - The Linux Security Project"
-echo "                    ----------------------------------------"
-echo "                     A project focused on improving Linux"
-echo "                    security by automating, containerizing"
-echo "                                Hardening and"
-echo "                         System protection measures."
-echo "                             License: MIT License"
-echo "                                Version: 1.2"
-echo "                               Dev: Tim Burns
-echo "          GitHub: https://github.com/OpenSource-For-Freedom/Linux.git"
-echo ""
-echo ""
-echo ""
+def print_ascii_art():
+    art = """
+        -----------------------------------------------------------------------
+                    H   H   AAAAA   RRRR    DDDD    333333    NN    N
+          ======== H   H  A     A  R   R   D   D       33    N N   N ========
+          ======= HHHHH  AAAAAAA  RRRR    D   D     33      N  N  N =========
+          ====== H   H  A     A  R  R    D   D       33    N   N N ==========
+                H   H  A     A  R   R   DDDD    333333    N    NN
+        -----------------------------------------------------------------------
+                    "HARD3N" - The Linux Security Project
+                    ----------------------------------------
+                     A project focused on improving Linux
+                    security by automating, containerizing
+                                Hardening and
+                         System protection measures.
+                             License: MIT License
+                                Version: 1.3.1
+                               Dev: Tim Burns
+          GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
+    """
+    print(art)
+import os
+import subprocess
+import logging
+from datetime import datetime
 
-#  enable known mitigations for CPU vulnerabilities @kiu :) + @whonix
-enable_cpu_mitigations() {
-    echo "Enabling known mitigations for CPU vulnerabilities..."
+# Configure logging
+LOG_DIR = "/var/log/security_scans"
+os.makedirs(LOG_DIR, exist_ok=True)
+DATE = datetime.now().strftime("%Y%m%d_%H%M%S")
+SCRIPT_LOG = os.path.join(LOG_DIR, f"script_execution_{DATE}.log")
 
-    # Backup the existing GRUB configuration file
-    sudo cp /etc/default/grub /etc/default/grub.bak
-
-    # Add CPU mitigations to GRUB_CMDLINE_LINUX
-    sudo sed -i 's/GRUB_CMDLINE_LINUX="/GRUB_CMDLINE_LINUX="mitigations=auto spectre_v2=on spec_store_bypass_disable=on l1tf=full,force mds=full tsx=off tsx_async_abort=full kvm.nx_huge_pages=force l1d_flush=on mmio_stale_data=full retbleed=auto /' /etc/default/grub
-
-    # Update GRUB
-    sudo update-grub
-    echo "CPU mitigations enabled and GRUB configuration updated."
-}
-
-# Ensure the script is executed with root privileges
-if [ "$(id -u)" -ne 0 ]; then
-    echo "Error: Please run this script as root or using sudo."
-    exit 1
-fi
-
-# Enable CPU mitigations
-enable_cpu_mitigations
-
-# Additional security hardening actions
-echo "Starting system hardening..."
-
-# Log spec file directory
-LOG_DIR="/var/log/security_scans"
-sudo mkdir -p "$LOG_DIR"
-DATE=$(date +"%Y%m%d_%H%M%S")
-SCRIPT_LOG="$LOG_DIR/script_execution_$DATE.log"
-
-echo "Starting system hard3ning at $(date)" | sudo tee -a "$SCRIPT_LOG"
-
-# check if a package is installed (simpler)
-is_package_installed() {
-    dpkg -l "$1" | grep -q "^ii"
-}
-
-# log messages
-log() {
-    echo "$(date +"%Y-%m-%d %T") $1" | sudo tee -a "$SCRIPT_LOG"
-}
-
-# Verify if script using root 
-if [ "$(id -u)" -ne 0 ]; then
-    log "Error: Please re-run this script with sudo or as root."
-    exit 1
-fi
-
-# check if successfully
-check_success() {
-    if [ $? -ne 0 ]; then
-        log "Error: $1 failed. Exiting script."
-        exit 1
-    else
-        log "$1 completed successfully."
-    fi
-}
-
-# Exec extended, logging and checking command was successful
-exec_e() {
-    "$@"
-    check_success "$1"
-}
-
-# Update system packages
-echo "Updating SEC_system packages..."
-exec_e apt update && exec_e apt upgrade -yy
-
-# Install security tools 
-echo "Installing security tools..."
-exec_e apt install -yy \
-    podman \
-    firejail \
-    bubblewrap \
-    ufw \
-    fail2ban \
-    clamav \
-    lynis \
-    apparmor apparmor-utils
+logging.basicConfig(
+    filename=SCRIPT_LOG,
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 
-## Enable Google MFA 
-echo "Setting up Google MFA for Login..."
+# Helper Functions
+def log(message):
+    print(message)
+    logging.info(message)
 
-# Install libpam-google-authenticator so long as user has it...
-exec_e apt install -y libpam-google-authenticator
 
-# Configure PAM for MFA
-echo "auth required pam_google_authenticator.so" | sudo tee -a /etc/pam.d/sshd
+def exec_command(command, check=True):
+    try:
+        subprocess.run(command, shell=True, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        log(f"Command failed: {command} | Error: {e.stderr}")
+        exit(1)
 
-# Ensure SSH supports Challenge-Response Authentication
-sed -i 's/^#ChallengeResponseAuthentication.*/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
-sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-sed -i 's/^UsePAM.*/UsePAM yes/' /etc/ssh/sshd_config
 
-# Restart SSH service
-exec_e systemctl restart sshd
+def is_root_user():
+    if os.geteuid() != 0:
+        log("Error: Please run this script with sudo or as root.")
+        exit(1)
 
-# User setup instructions
-echo "To enable MFA for a user, log in as that user and run: google-authenticator"
-echo "Follow the on-screen instructions to configure your MFA."
 
-# Check if Snap is installed
-if ! command -v snap &> /dev/null; then
-    log "SNAP not found. Installing Snap..."
-    exec_e sudo apt update
-    exec_e sudo apt install -y snapd
-fi
+# Functionality Implementations
+def enable_cpu_mitigations():
+    log("Enabling known mitigations for CPU vulnerabilities...")
+    exec_command("cp /etc/default/grub /etc/default/grub.bak")
+    exec_command(
+        r'sed -i \'s|GRUB_CMDLINE_LINUX="|GRUB_CMDLINE_LINUX="mitigations=auto spectre_v2=on '
+        r'spec_store_bypass_disable=on l1tf=full,force mds=full tsx=off tsx_async_abort=full '
+        r'kvm.nx_huge_pages=force l1d_flush=on mmio_stale_data=full retbleed=auto |\' /etc/default/grub'
+    )
+    exec_command("update-grub")
+    log("CPU mitigations enabled and GRUB configuration updated.")
 
-# Check if LXD is installed
-if ! command -v lxd &> /dev/null; then
-    log "LXD not found. Installing LXD via Snap..."
-    exec_e sudo snap install lxd
-fi
 
-# Optional: If you still want to add the PPA (for apt-based installation):
-if ! command -v lxd &> /dev/null; then
-    log "Adding LXD PPA..."
-    exec_e sudo apt install -y software-properties-common
-    exec_e sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable
-    exec_e sudo apt update
-    exec_e sudo apt install -y lxd
-fi
+def configure_firewall(ssh_needed, ssh_port=22, ssh_out_port=22):
+    log("Setting up UFW firewall...")
+    exec_command("ufw enable")
+    exec_command("ufw default deny incoming")
+    exec_command("ufw default allow outgoing")
 
-# Enable AppArmor
-echo "Enabling AppArmor..."
-exec_e sudo systemctl enable --now apparmor
+    if ssh_needed:
+        exec_command(f"ufw allow {ssh_port}")
+        exec_command(f"ufw allow out {ssh_out_port}")
+        log(f"SSH access allowed on ports {ssh_port} (inbound) and {ssh_out_port} (outbound).")
+    else:
+        log("SSH access disabled.")
 
-# Enable UFW (Uncomplicated Firewall but no specific ports)
-echo "Setting up UFW firewall..."
-exec_e sudo ufw enable
-exec_e sudo ufw default deny incoming
-exec_e sudo ufw default allow outgoing
 
-# Ask user if SSH is needed and on what port
-read -p "Do you need SSH access? (y/n): " SSH_NEEDED
-if [[ "$SSH_NEEDED" == "y" ]]; then
-    read -p "Enter inbound port for SSH (default 22): " SSH_PORT
-    SSH_PORT=${SSH_PORT:-22}  # Default to port 22 if not specified
-    read -p "Enter outbound port for SSH (default 22): " SSH_OUT_PORT
-    SSH_OUT_PORT=${SSH_OUT_PORT:-22}  # Default to port 22 if not specified
-    echo "Allowing SSH inbound and outbound on port $SSH_PORT and $SSH_OUT_PORT"
-    exec_e sudo ufw allow "$SSH_PORT"
-    exec_e sudo ufw allow out "$SSH_OUT_PORT"
-else
-    echo "SSH access is disabled."
-fi
+def install_security_tools():
+    log("Updating system packages...")
+    exec_command("apt update")
+    exec_command("apt upgrade -yy")
 
-# Fail2Ban
-echo "Enabling Fail2Ban..."
-exec_e sudo systemctl enable --now fail2ban
+    log("Installing security tools...")
+    exec_command("apt install -yy podman firejail bubblewrap ufw fail2ban clamav lynis apparmor apparmor-utils libpam-google-authenticator")
 
-# ClamAV
-echo "Setting up ClamAV..."
-exec_e sudo freshclam
-exec_e sudo clamscan -r / --log="$LOG_DIR/clamav_scan_$DATE.log"
 
-# Lynis
-echo "Running Lynis system audit..."
-exec_e sudo lynis audit system | tee "$LOG_DIR/lynis_audit_$DATE.log"
+def configure_mfa():
+    log("Configuring Google MFA for SSH login...")
+    with open("/etc/pam.d/sshd", "a") as pam_file:
+        pam_file.write("auth required pam_google_authenticator.so\n")
 
-# Podman 
-echo "Setting up Podman for Firefox container..."
-if ! is_package_installed podman; then
-    echo "Podman not installed, installing..."
-    exec_e sudo apt install -yy podman
-fi
+    exec_command(r"sed -i 's/^#ChallengeResponseAuthentication.*/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config")
+    exec_command(r"sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config")
+    exec_command(r"sed -i 's/^UsePAM.*/UsePAM yes/' /etc/ssh/sshd_config")
+    exec_command("systemctl restart sshd")
+    log("Google MFA configured. Users should run 'google-authenticator' to set up their accounts.")
 
-# Pull Firefox container image
-echo "Pulling Firefox container image..."
-exec_e sudo podman pull jess/firefox
 
-# Run Firefox in a container with network isolation (test)
-echo "Running Firefox in a container (network isolation)..."
-exec_e sudo podman run -it --rm --net=none jess/firefox
+def setup_sandboxing():
+    log("Configuring sandboxing tools for web browsers...")
+    browser_map = {
+        "firefox": ("/home/$USER/.mozilla", "/usr/bin/firefox"),
+        "google-chrome": ("/home/$USER/.config/google-chrome", "/usr/bin/google-chrome"),
+        "chromium-browser": ("/home/$USER/.config/chromium", "/usr/bin/chromium-browser"),
+        "chromium": ("/home/$USER/.config/chromium", "/usr/bin/chromium"),
+        "brave-browser": ("/home/$USER/.config/BraveSoftware", "/usr/bin/brave-browser"),
+        "opera": ("/home/$USER/.config/opera", "/usr/bin/opera")
+    }
 
-# LXC/LXD containerization 
-echo "Setting up LXC/LXD containers..."
-if ! is_package_installed lxd; then
-    echo "LXD not installed, installing..."
-    exec_e sudo apt install -yy lxd lxd-client
-    exec_e sudo lxd init --auto
-fi
+    for browser, (profile_dir, binary_path) in browser_map.items():
+        if shutil.which(browser):
+            log(f"Configuring Bubblewrap sandbox for {browser}...")
+            exec_command(
+                f"bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all "
+                f"--bind {profile_dir} {profile_dir} --bind /tmp /tmp -- {binary_path}"
+            )
+        else:
+            log(f"{browser} not found, skipping Bubblewrap sandboxing.")
 
-# Create an LXC container for Firefox 
-echo "Creating LXC container for Firefox..."
-exec_e sudo lxc launch ubuntu:20.04 firefox-container
-exec_e sudo lxc exec firefox-container -- apt update && sudo apt install -yy firefox
-exec_e sudo lxc exec firefox-container -- firefox
 
-# Firejail sandboxing for applications 
-echo "Setting up Firejail sandbox for Firefox..."
-exec_e firejail firefox
+def run_audits():
+    log("Setting up ClamAV...")
+    exec_command("freshclam")
+    exec_command(f"clamscan -r / --log={LOG_DIR}/clamav_scan_{DATE}.log")
 
-# Bubblewrap firefox only
-echo "Setting up Bubblewrap for Firefox..."
-exec_e bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all --bind /home/$USER/.mozilla /home/$USER/.mozilla --bind /tmp /tmp -- /usr/bin/firefox
+    log("Running Lynis system audit...")
+    exec_command(f"lynis audit system | tee {LOG_DIR}/lynis_audit_{DATE}.log")
 
-# Final Notification and Reboot
-log "System hardening complete. All security measures are now in place."
 
-# Prompt to reboot
+# Main Script Execution
+def main():
+    is_root_user()
+    log("Starting system hardening...")
+
+    enable_cpu_mitigations()
+    install_security_tools()
+
+    ssh_needed = input("Do you need SSH access? (y/n): ").strip().lower() == "y"
+    ssh_port = 22
+    ssh_out_port = 22
+
+    if ssh_needed:
+        ssh_port = input("Enter inbound port for SSH (default 22): ").strip() or 22
+        ssh_out_port = input("Enter outbound port for SSH (default 22): ").strip() or 22
+
+    configure_firewall(ssh_needed, ssh_port, ssh_out_port)
+    configure_mfa()
+    setup_sandboxing()
+    run_audits()
+
+    log("System hardening complete. Please reboot the system for all changes to take effect.")
+    if input("Would you like to reboot now? (y/n): ").strip().lower() == "y":
+        exec_command("reboot")
+
+
+if __name__ == "__main__":
+    main()
