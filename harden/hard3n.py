@@ -5,7 +5,6 @@ import sys
 import logging
 from datetime import datetime
 import argparse
-import tkinter
 
 # Print the ASCII art and text
 def print_ascii_art():
@@ -33,6 +32,8 @@ import os
 import subprocess
 import logging
 from datetime import datetime
+import tkinter as tk
+from hard3n_tk import Hard3nGUI # import GUI
 
 # Configure logging
 LOG_DIR = "/var/log/security_scans"
@@ -174,6 +175,9 @@ def main():
     if input("Would you like to reboot now? (y/n): ").strip().lower() == "y":
         exec_command("reboot")
 
+  # Ask user about Hard3n Qube script GUI
+    gui = Hard3nGUI()
+    gui.run()  # Run the GUI after full sript is completed
 
 if __name__ == "__main__":
     main()
