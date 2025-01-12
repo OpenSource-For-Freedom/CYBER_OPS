@@ -13,7 +13,8 @@ This guide provides detailed steps to maintain your Debian-based system, ensurin
   sudo nano /etc/apt/sources.list
   ```
 
->Verify or Change the Mirror**: Replace the mirror URLs with reliable sources. You can find a list of Debian mirrors [here](https://www.debian.org/mirror/list). Ensure the URLs correspond to your Debian version (e.g., `buster`, `bullseye`).
+>Verify or Change the Mirror**: Replace the mirror URLs with reliable sources. You can find a list of Debian mirrors [here](https://www.debian.org/mirror/list). 
+>Ensure the URLs correspond to your Debian version (e.g., `buster`, `bullseye`).
 
   ```
   deb http://deb.debian.org/debian buster main contrib non-free
@@ -30,19 +31,19 @@ Ensure your system is up-to-date with the latest package versions and security u
 >Update Package Lists**:
 
   ```
-  sudo apt update
+  sudo apt update -y
   ```
 
->Upgrade Installed Packages**:
+>Upgrade Installed Packages**:(-y is to force)
 
   ```
-  sudo apt upgrade
+  sudo apt upgrade -y
   ```
 
 >Perform a Full Upgrade**:
 
   ```
-  sudo apt full-upgrade
+  sudo apt full-upgrade -y
   ```
 
 ## 3. Manage Dependencies and Clean Up
@@ -66,7 +67,7 @@ Remove unused packages and resolve any broken dependencies.
 Old kernels can clutter your system. Keep it clean by removing outdated kernels, but be careful not to remove the currently active kernel.
 
 >List Currently Installed Kernels**:
-
+>input the Linux image you currently are on
   ```
   dpkg --list 'linux-image*'
   ```
@@ -78,7 +79,8 @@ Old kernels can clutter your system. Keep it clean by removing outdated kernels,
   ```
 
 - **Remove Outdated Kernels** (replace `x.x.x-xx` with the actual version you wish to remove):
-
+> Will rm -rf old kernal onky if you designate it here. 
+> you can also bulk delete kernal files here.
   ```
   sudo apt remove linux-image-x.x.x-xx-generic
   ```
