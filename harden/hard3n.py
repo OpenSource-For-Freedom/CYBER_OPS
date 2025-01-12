@@ -47,8 +47,8 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-# add tkinter function ti ask uswrs if they want to imprort
-# dependant files _qubes.py and _dark.py using a sinple branded GUI
+# add tkinter function to ask us3rs if they want to import
+# dependant files _qubes.py and _dark.py using a simple branded GUI
 
 # Helper Functions
 def log(message):
