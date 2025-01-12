@@ -49,14 +49,10 @@
 
 ---
 
-# Why It’s Relevant for Websites
-
-Hosting a website introduces specific challenges:
-- Protecting sensitive user data.
-- Ensuring uptime by mitigating DDoS attacks or other disruptions.
-- Complying with privacy laws and regulations (e.g., GDPR).
-
-This script is particularly useful for securing a server before deploying a website, as it:
-- Closes unused ports, reducing the attack surface.
-- Provides tools for real-time monitoring.
-- Implements best practices for application isolation.
+## Hard3n_qube > What is it? 
+- It starts by setting a deep logging sequence
+- It locks down the NIC away form NetworkManager and allows only the ip link over TOR. 
+- This file introduces containerizing principles to all directories and any imported files. 
+- It will bring in the TOR tunnnel and utilize the fastes bridge conneciton "Snowflake"
+- It will containerize all Web based downloads and activity 
+- It changes your DNS to perform over loopback, so not to expose your internal Data. 

@@ -5,6 +5,7 @@ import sys
 import logging
 from datetime import datetime
 import argparse
+import tkinter
 
 # Print the ASCII art and text
 def print_ascii_art():
