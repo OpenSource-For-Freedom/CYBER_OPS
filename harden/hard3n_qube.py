@@ -141,7 +141,9 @@ def sandbox_directories():
         run_command(["firejail", f"--private={directory}"], f"Sandboxing directory {directory}")
 
     print("[+] Critical directories sandboxed successfully.")
-
+# allow only signed and approved updates + upgrades around browser lockdown
+   sudo apt-get update && sudo apt-get install --only-upgrade $(cat /filepath_to/approved package handling location.txt)
+   
 # Redirect web downloads > locked-down directory
 def redirect_web_downloads(directory="/var/locked_downloads"):
     """Redirect web-based downloads to a locked directory for inspection."""
