@@ -4,7 +4,7 @@
 </p>
 
 ##                                       ***Developer: Tim Burns***
-##                                    ***Contact: Support@grdv.org***          
+##                                   
 
 # **The Linux + DevSec Project**  
 ### ***Hard3n*** - A single Linux package to sandbox a Debian OS and support systems, both endpoint and server.
