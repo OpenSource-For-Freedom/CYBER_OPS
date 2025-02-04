@@ -36,31 +36,24 @@ Handles the core lockdown process, including:
   sudo apt update
   sudo apt install -y python3 python3-pip tor firejail
   pip3 install pillow
-  ```bash
-
   
-  How It Works
-	•	hard3n.py: Runs the main functionality, initiating security processes based on user input.
-	•	hard3n_tk.py: GUI interface for selecting between available options and executing security actions.
-	•	hard3n_dark.py: (Coming soon) Handles file security features like encryption.
-	•	hard3n_qubes.py: Enforces strict network lockdown, routes all traffic through Tor, and uses Firejail for browser containerization.
+  ## How It Works
 
-Troubleshooting
+- **hard3n.py**: Runs the main functionality, initiating security processes based on user input.
+- **hard3n_tk.py**: GUI interface for selecting between available options and executing security actions.
+- **hard3n_dark.py**: (Coming soon) Handles file security features like encryption.
+- **hard3n_qubes.py**: Enforces strict network lockdown, routes all traffic through Tor, and uses Firejail for browser containerization.
 
-### If you encounter issues with Tor not starting, try restarting the Tor service:
+---
+
+## Troubleshooting
+
+If you encounter issues with Tor not starting, try restarting the Tor service:
+
 ```bash
 sudo systemctl restart tor
-```bash
-### To flush any network lockdown rules (if internet access is lost):
-```bash
+
+flush the network rules
+
 sudo iptables -F
 sudo iptables -t nat -F
-```bash
-> License
-
-### MIT License
-
-|Author|
-
->Tim Burns
->Security Engineer | Developer
