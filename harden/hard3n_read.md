@@ -1,58 +1,65 @@
-# Why Develop This Tool for Debian Linux and Website Security?
+# HARD3N System
 
-## 1. Debian as a Popular Server OS
-- Debian is widely used for hosting websites due to its stability and large repository of software. However, its default configurations focus more on usability than security. This makes hardening essential for any public-facing server to prevent attacks.
-
-## 2. Need for Automated Security
-- Manual security configurations are error-prone and time-intensive. Automating security tasks ensures consistency, reduces human errors, and streamlines the process for administrators or less-experienced users.
-- This script incorporates modern tools (e.g., **Podman**, **Firejail**, **UFW**, **Fail2Ban**) to secure the system while automating containerization, monitoring, and sandboxing.
-
-## 3. Evolving Threat Landscape
-- Hosting websites exposes servers to potential threats like brute force, SQL injection, malware infections, and privilege escalation.
-- This script preemptively addresses these risks with:
-  - **Firewall rules (UFW)**.
-  - **Malware scanning (ClamAV)**.
-  - **Intrusion detection (Fail2Ban)**.
-  - **System auditing (Lynis)**.
-
-## 4. Containerization and Sandboxing
-- **Podman**, **Firejail**, and **Bubblewrap** are excellent for isolating applications like web browsers and web services. These tools ensure that compromised software cannot affect the entire system.
-- Containerizing search engines, web browsers, or custom applications adds another layer of security, especially when accessing untrusted content.
-
-## 5. Improving Usability for Administrators
-- By integrating tools like **LXD/LXC** and automating their setup, this script makes advanced security features accessible to users without requiring deep expertise in Linux or system security.
-
-## 6. Focus on Open-Source Collaboration
-- Keeping the script open source fosters community involvement, allowing others to audit, improve, or adapt it to their use cases. This aligns with the open-source philosophy of transparency and shared knowledge.
+## Mission
+HARD3N is a security toolkit designed to enhance system protection through a combination of lockdown measures, network anonymization via Tor, and file security features. Its goal is to make your system more secure, anonymous, and resistant to threats.
 
 ---
 
-# Key Features of the Script
+## Files Overview
 
-## 1. Security Baseline Setup
-- Enables **AppArmor**, a mandatory access control system to restrict processes.
-- Sets up a firewall (**UFW**) with default deny-all rules for inbound traffic, ensuring only explicitly allowed ports (like SSH) are accessible.
+### `hard3n.py`
+The core script of the HARD3N system. It coordinates between the modules and acts as the main entry point for system lockdown and security operations.
 
-## 2. Containerization and Sandboxing
-- Configures **Podman**, **LXC/LXD**, **Firejail**, and **Bubblewrap** to isolate applications.
-- Provides examples for sandboxing Firefox, making it adaptable for securing other applications.
+### `hard3n_tk.py`
+A Tkinter-based GUI that allows users to interact with the system and choose between different security features like **Hard3n Qubes** and **Dark Files**.
 
-## 3. Real-Time Monitoring and Auditing
-- Integrates **Fail2Ban** to monitor and block suspicious login attempts.
-- Uses **Lynis** for comprehensive system auditing and reports.
+### `hard3n_dark.py`
+The file security module (planned). It will handle encrypted storage and secure access for critical files.
 
-## 4. Malware Scanning
-- Sets up **ClamAV** for periodic scans and logs any threats found.
-
-## 5. Ease of Use
-- The script ensures that all actions are logged, errors are caught early, and the administrator is prompted for key decisions (e.g., enabling SSH).
+### `hard3n_qubes.py`
+Handles the core lockdown process, including:
+- Routing network traffic through Tor.
+- Containerizing browser activity with Firejail.
+- Locking down network interfaces (NIC).
+- Creating sandboxed directories for system protection.
 
 ---
 
-## Hard3n_qube > What is it? 
-- It starts by setting a deep logging sequence
-- It locks down the NIC away form NetworkManager and allows only the ip link over TOR. 
-- This file introduces containerizing principles to all directories and any imported files. 
-- It will bring in the TOR tunnnel and utilize the fastes bridge conneciton "Snowflake"
-- It will containerize all Web based downloads and activity 
-- It changes your DNS to perform over loopback, so not to expose your internal Data. 
+## Setup
+
+### Prerequisites
+- **Debian-based OS** (Debian/Ubuntu recommended)
+- **Python 3.x**
+- Install dependencies:
+
+  ```bash
+  sudo apt update
+  sudo apt install -y python3 python3-pip tor firejail
+  pip3 install pillow
+  '''
+  
+  How It Works
+	•	hard3n.py: Runs the main functionality, initiating security processes based on user input.
+	•	hard3n_tk.py: GUI interface for selecting between available options and executing security actions.
+	•	hard3n_dark.py: (Coming soon) Handles file security features like encryption.
+	•	hard3n_qubes.py: Enforces strict network lockdown, routes all traffic through Tor, and uses Firejail for browser containerization.
+
+Troubleshooting
+
+### If you encounter issues with Tor not starting, try restarting the Tor service:
+'''
+### sudo systemctl restart tor
+'''
+### To flush any network lockdown rules (if internet access is lost):
+'''
+sudo iptables -F
+sudo iptables -t nat -F
+'''
+> License
+
+### MIT License
+
+|Author|
+
+>Tim Burns
+>Security Engineer | Developer
