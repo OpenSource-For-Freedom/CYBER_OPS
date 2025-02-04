@@ -36,7 +36,8 @@ Handles the core lockdown process, including:
   sudo apt update
   sudo apt install -y python3 python3-pip tor firejail
   pip3 install pillow
-  '''
+  ```bash
+
   
   How It Works
 	•	hard3n.py: Runs the main functionality, initiating security processes based on user input.
@@ -47,14 +48,14 @@ Handles the core lockdown process, including:
 Troubleshooting
 
 ### If you encounter issues with Tor not starting, try restarting the Tor service:
-'''
-### sudo systemctl restart tor
-'''
+```bash
+sudo systemctl restart tor
+```bash
 ### To flush any network lockdown rules (if internet access is lost):
-'''
+```bash
 sudo iptables -F
 sudo iptables -t nat -F
-'''
+```bash
 > License
 
 ### MIT License
