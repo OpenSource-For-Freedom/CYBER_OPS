@@ -10,11 +10,6 @@
 ### ***Hard3n*** - A single Linux package to sandbox a Debian OS and support systems, both endpoint and server.
 
 ---
-
-## Welcome! 
-
-The **HARD3N** repository enhances the security and functionality of Linux systems, supported OS models, and networks.
-
 # **Overview**  
 
 In the development of this repository, we aim to include all facets of **kernel hardening**, **penetration testing**, and **OS security** for Debian Linux systems, ensuring both security and stability.
