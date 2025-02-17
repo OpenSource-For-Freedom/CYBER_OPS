@@ -216,13 +216,106 @@ def run_audits():
 
     except KeyboardInterrupt:
         cleanup_and_exit()
+# set gid perms
+def track_setgid_permissions():
+    """Finds all files with setgid permissions and logs them."""
+    update_status("Tracking setgid permissions")
+    log("Tracking files with setgid permissions...")
 
+    try:
+        exec_command(
+            "find / -mount -perm -2000 -type f -exec ls -ld {} \; > /home/user/setgid_.txt && chown user:user /home/user/setgid_.txt"
+        )
+        log("Setgid permission report saved to /home/user/setgid_.txt")
+    except Exception as e:
+        log(f"Error tracking setgid files: {e}")
 
 # THREADING FOR AUDITS
 def start_hardening():
-    """Runs system hardening in a separate thread to prevent GUI freezing."""
-    hardening_thread = threading.Thread(target=run_audits, daemon=True)
+    """Runs the system hardening process inside the GUI event loop."""
+    hardening_thread = threading.Thread(target=lambda: [
+        enable_cpu_mitigations(),
+        install_security_tools(),
+        track_setgid_permissions(),
+        enforce_password_expiration(),
+        harden_network(),
+        enable_unattended_upgrades(),
+        setup_security_cron_jobs(),
+        run_audits()
+    ], daemon=True)
     hardening_thread.start()
+
+    
+# PASSWORD STUFF
+    def enforce_password_expiration():
+    """Sets a password expiration policy for all users."""
+    update_status("Enforcing password policy")
+    log("Setting expiration policies for all users...")
+
+    try:
+        exec_command("sudo chage -M 90 -m 7 -W 14 $(whoami)")
+        log("Password expiration policy applied: max 90 days, min 7 days, warning 14 days before expiration.")
+    except Exception as e:
+        log(f"Error setting password expiration policy: {e}")
+
+# NETWORK STUFF
+def harden_network():
+    """Applies network security configurations from the README."""
+    update_status("Applying network hardening")
+    log("Applying recommended sysctl.conf security settings...")
+
+    try:
+        exec_command(
+            "echo '\n"
+            "net.ipv4.conf.all.rp_filter = 1\n"
+            "net.ipv4.tcp_syncookies = 1\n"
+            "net.ipv4.icmp_echo_ignore_broadcasts = 1\n"
+            "net.ipv6.conf.all.accept_source_route = 0\n"
+            "net.ipv6.conf.all.accept_redirects = 0\n"
+            "' | sudo tee -a /etc/sysctl.conf"
+        )
+        exec_command("sudo sysctl -p")  # Apply changes asap
+        log("Network security parameters applied.")
+    except Exception as e:
+        log(f"Error hardening network parameters: {e}")
+
+# UPGRADE STUFF
+def enable_unattended_upgrades():
+    """Installs and configures unattended-upgrades."""
+    update_status("Enabling automatic security updates")
+    log("Installing and enabling unattended-upgrades...")
+
+    try:
+        exec_command("sudo apt install -y unattended-upgrades")
+        exec_command(
+            "echo 'APT::Periodic::Update-Package-Lists \"1\";\n"
+            "APT::Periodic::Unattended-Upgrade \"1\";' | sudo tee /etc/apt/apt.conf.d/20auto-upgrades"
+        )
+        exec_command("sudo dpkg-reconfigure -plow unattended-upgrades")
+        log("Unattended security updates enabled.")
+    except Exception as e:
+        log(f"Error enabling automatic updates: {e}")
+
+# CRON UPDATES AND LOG CHECKS
+def setup_security_cron_jobs():
+    """Creates cron jobs for periodic security tasks."""
+    update_status("Setting up security automation")
+    log("Adding security-related cron jobs...")
+
+    try:
+        cron_jobs = [
+            "@daily sudo apt update && sudo apt upgrade -y",
+            "@weekly sudo lynis audit system >> /var/log/lynis_weekly.log",
+            "@weekly sudo find / -perm -2000 -type f -exec ls -ld {} \; > /home/user/setgid_.txt",
+        ]
+
+        for job in cron_jobs:
+            exec_command(f"(crontab -l 2>/dev/null; echo \"{job}\") | crontab -")
+
+        log("Security cron jobs added successfully.")
+    except Exception as e:
+        log(f"Error adding cron jobs: {e}")
+
 
 # MAIN
 def main():
