@@ -41,10 +41,12 @@ By following these guidelines, you will enhance system security, maintain stabil
 - **Console User Group Analysis in Whonix**  
   Investigate **Whonix's** console user groups to improve security management.  
   **Objective:** Reduce the risk of privilege escalation.  
+  - a huge thank you to @kiukiucat for adding this. 
 
 ---
 
 ## **Security Enhancements**
+### Here we can go over some basic sec permsion and configuration lines to get you started. 
 
 ### **Track and Document Setgid Permissions**
 
