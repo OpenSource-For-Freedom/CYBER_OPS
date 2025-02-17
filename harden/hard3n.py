@@ -167,21 +167,21 @@ def setup_sandboxing():
 
 
 # clamv + lynis background scan
-def run_audits():n
+def run_audits():
     update_status("Running Security Audits")
 
-    log("Setting up ClamAV...")
-    exec_command("freshclam")
+log("Setting up ClamAV...")
+exec_command("freshclam")
 
-    scan_dirs = ["/home", "/var/log", "/etc", "/usr/bin"]
+scan_dirs = ["/home", "/var/log", "/etc", "/usr/bin"]
 
-    log("Starting ClamAV scan in the background...")
-    for dir in scan_dirs:
+log("Starting ClamAV scan in the background...")
+for dir in scan_dirs:
         log(f"Scanning {dir} with ClamAV...")
         exec_command(f"clamscan -r {dir} --log={LOG_DIR}/clamav_scan_{DATE}.log")
     
-    log("Running Lynis system audit...")
-    exec_command(f"lynis audit system | tee {LOG_DIR}/lynis_audit_{DATE}.log")
+log("Running Lynis system audit...")
+exec_command(f"lynis audit system | tee {LOG_DIR}/lynis_audit_{DATE}.log")
 
 
 # Main Script Execution
