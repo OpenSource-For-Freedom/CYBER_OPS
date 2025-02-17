@@ -1,6 +1,6 @@
 
 <p align="center">
-    <img src="github-header-image.png">
+    <img src="Images/github-header-image.png">
 </p>
 
 ##                                       ***Developer: Tim Burns***
@@ -10,16 +10,11 @@
 ### ***Hard3n*** - A single Linux package to sandbox a Debian OS and support systems, both endpoint and server.
 
 ---
-
-## Welcome! 
-
-The **HARD3N** repository is dedicated to enhancing the security and functionality of Linux systems, supported OS models, and networks.
-
 # **Overview**  
 
 In the development of this repository, we aim to include all facets of **kernel hardening**, **penetration testing**, and **OS security** for Debian Linux systems, ensuring both security and stability.
 
-This document outlines the **pre-release activities** that need to be completed before finalizing the project release. These tasks are designed to **reinforce security**, **improve performance**, and **streamline user management**.
+This document outlines the pre-release activities that need to be completed before finalizing the project release. These tasks are designed to reinforce security, improve performance, and streamline user management.
 
 By following these guidelines, you will enhance system security, maintain stability, and optimize Debian-based systems for performance and resilience.
 
@@ -53,96 +48,96 @@ By following these guidelines, you will enhance system security, maintain stabil
 
 Run the following command to identify files with `setgid` permissions:
 
-'''
+```
 find / -mount -perm -2000 -type f -exec ls -ld {} \; > /home/user/setgid_.txt && chown -v user:user /home/user/setgid_.txt
-'''
+```
 Objective: Document privileged files and minimize risks associated with misconfigured permissions.
 
-Ongoing Future Configurations
+### Ongoing Future Configurations
 
 Security Settings and Modifications
-	•	Modify security configuration files
+- Modify security configuration files
 Located in /etc/security and /etc/host.conf to enhance system protection.
-	•	Set password expiration policies:
-'''
+- Set password expiration policies:
+```
 sudo chage -M 90 -m 7 -W 14 username
-'''
+```
 
-	•	Restrict sudo permissions:
-'''
+Restrict sudo permissions:
+```
 sudo visudo
-'''
+```
 Add:
-'''
+```
 username ALL=(ALL) ALL, !/bin/su, !/usr/bin/passwd
-'''
+```
 
-	•	Sandbox GRUB and enable secure updates
+### Sandbox GRUB and enable secure updates
 Install and enable AppArmor:
-'''
+```
 sudo apt install apparmor
 sudo systemctl enable apparmor
 sudo systemctl start apparmor
-'''
+```
 Configure AppArmor for GRUB:
-'''
+```
 sudo nano /etc/apparmor.d/usr.sbin.grub
-'''
+```
 Add:
-'''
+```
 /usr/sbin/grub2-mkconfig ixr,
 /usr/sbin/grub-install ixr,
 /etc/grub.d/** r,
 /boot/grub/** rw,
 /dev/sda r,
-'''
+```
 Apply the configuration:
-'''
+```
 sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.grub
-'''
+```
 
-	•	Enable unattended security updates:
-'''
+### Enable unattended security updates:
+```
 sudo apt install unattended-upgrades
 sudo nano /etc/apt/apt.conf.d/50unattended-upgrades
-'''
+```
 Add:
-
+```
 "Allowed-Origins": {
     "Debian": "${distro_id}:${distro_codename}-updates";
 }
-
+```
 Enable:
-'''
+```
 sudo dpkg-reconfigure -plow unattended-upgrades
-'''
+```
 
-	•	Harden network parameters:
-'''
+Harden network parameters:
+```
 sudo nano /etc/sysctl.conf
-'''
+```
 Add:
-'''
+```
 net.ipv4.conf.all.rp_filter = 1
 net.ipv4.tcp_syncookies = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 net.ipv6.conf.all.accept_source_route = 0
 net.ipv6.conf.all.accept_redirects = 0
-'''
+```
 
 Apply changes:
 
-'''
+```
 sudo sysctl -p
-'''
+```
 
-Critical Pre-Release Steps
-	•	Audit logs: Enable security logging and set up automated log analysis.
-	•	Backup & Recovery Plan: Implement a reliable system backup strategy.
-	•	Testing: Ensure all security measures work properly before release.
-	•	CRON jobs: Automate updates and system security monitoring.
+### Critical Pre-Release Steps
+Audit logs: Enable security logging and set up automated log analysis.
+Backup & Recovery Plan: Implement a reliable system backup strategy.
+Testing: Ensure all security measures work properly before release.
+CRON jobs: Automate updates and system security monitoring.
 
-System Hardening Tools
+### System Hardening Tools
 
 Tool,Description
 Lynis,Security auditing tool for Unix-based systems.
@@ -152,14 +147,14 @@ AppArmor,Mandatory Access Control (MAC) for enforcing policies.
 ClamAV,Open-source antivirus software.
 Firejail,Sandboxing tool for application isolation.
 
-Takeaways and Next Steps
+### Takeaways and Next Steps
 
-✔️ Complete all outlined hardening tasks.
-✔️ Document all changes and configurations.
-✔️ Conduct rigorous system testing.
-✔️ Schedule a final review before the official release.
+✔Complete all outlined hardening tasks.
+✔Document all changes and configurations.
+✔Conduct rigorous system testing.
+✔Schedule a final review before the official release.
 
-Security First! Always Stay Open Source for Freedom 🛡️
+## Security First! Always Stay Open Source for Freedom 
 
 <p align="center">
     <img src="octocat-1736601186918.png">
