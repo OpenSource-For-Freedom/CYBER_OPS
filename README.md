@@ -1,6 +1,6 @@
 
 <p align="center">
-    <img src="github-header-image.png">
+    <img src="Images/github-header-image.png">
 </p>
 
 ##                                       ***Developer: Tim Burns***
