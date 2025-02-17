@@ -6,8 +6,7 @@ import signal
 import logging
 from datetime import datetime
 import tkinter as tk
-from tkinter import ttk 
-from hard3n_tk import Hard3nGUI
+from hard3n_tk import Hard3nGUI  # import GUI
 
 # RUNS AS ROOT
 def ensure_root():
@@ -21,7 +20,8 @@ def ensure_root():
 
 ensure_root()
 
-# ASCII ART
+
+# Print the ASCII art and text
 def print_ascii_art():
     art = """
     --------------------------------------------------------------------------
@@ -43,52 +43,10 @@ def print_ascii_art():
       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
     print(art)
-
-# STATUS GUI
-class StatusGUI:
-    def __init__(self):
-        self.root = tk.Tk()
-        self.root.title("HARD3N - System Hardening Progress")
-        self.root.geometry("500x300")
-        self.root.resizable(False, False)
-
-        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 12), wraplength=480)
-        self.label.pack(pady=20)
-
-        self.progress = ttk.Progressbar(self.root, length=400, mode="determinate")
-        self.progress.pack(pady=10)
-
-        self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
-        self.close_button.pack(pady=10)
-
-        self.total_steps = 6
-        self.current_step = 0
-
-    def update_status(self, message):
-        """Updates the GUI progress"""
-        self.current_step += 1
-        progress_percent = int((self.current_step / self.total_steps) * 100)
-        self.label.config(text=message)
-        self.progress["value"] = progress_percent
-        self.root.update_idletasks()
-
-    def complete(self):
-        """Marks completion of process"""
-        self.label.config(text="System Hardening Complete!")
-        self.progress["value"] = 100
-        self.close_button.config(state=tk.NORMAL)
-        self.root.update_idletasks()
-
-    def run(self):
-        """Runs the GUI"""
-        self.root.mainloop()
-
-# INITIALIZE GUI
-status_gui = StatusGUI()
-
-# STATUS COUNTER
-status_step = 0
-total_steps = 6
+    
+    # Status Counter that should work... should
+status_step = 0  # Global variable to track progress
+total_steps = 6   # Adjust this number based on your steps
 
 def update_status(step_name):
     """Updates both the console log and GUI"""
@@ -123,24 +81,27 @@ def exec_command(command, check=True):
         log(f"Command failed: {command} | Error: {e.stderr}")
         exit(1)
 
-# SYSTEM HARDENING
+
+def is_root_user():
+    if os.geteuid() != 0:
+        log("Error: Please run this script with sudo or as root.")
+        exit(1)
+
+
+# Functionality CPU mits an grub boop
 def enable_cpu_mitigations():
     update_status("Enabling CPU Mitigations")
     exec_command("cp /etc/default/grub /etc/default/grub.bak")
     exec_command(
-        'sudo sed -i \'s|GRUB_CMDLINE_LINUX="|GRUB_CMDLINE_LINUX="mitigations=auto spectre_v2=on '
-        'spec_store_bypass_disable=on l1tf=full,force mds=full tsx=off tsx_async_abort=full '
-        'l1d_flush=on mmio_stale_data=full retbleed=auto |\' /etc/default/grub'
+        'sed -i \'/^GRUB_CMDLINE_LINUX=/ s/"$/ mitigations=auto spectre_v2=on spec_store_bypass_disable=on '
+        'l1tf=full,force mds=full tsx=off tsx_async_abort=full l1d_flush=on mmio_stale_data=full retbleed=auto"/\' '
+        '/etc/default/grub'
     )
-    exec_command("sudo update-grub")
-    log("CPU mitigations enabled and GRUB configuration updated.")
+    exec_command("update-grub")
+    log("CPU mitigations enabled and GRUB configuration updated successfully.")
 
-def install_security_tools():
-    update_status("Installing Security Tools")
-    exec_command("apt update")
-    exec_command("apt upgrade -y")
-    exec_command("apt install -y podman firejail bubblewrap ufw fail2ban clamav lynis apparmor apparmor-utils")
-
+    
+# UFW stuff
 def configure_firewall(ssh_needed, ssh_port=22, ssh_out_port=22):
     update_status("Configuring Firewall")
     exec_command("sudo ufw enable")
@@ -150,22 +111,51 @@ def configure_firewall(ssh_needed, ssh_port=22, ssh_out_port=22):
     if ssh_needed:
         exec_command(f"sudo ufw allow {ssh_port}")
         exec_command(f"sudo ufw allow out {ssh_out_port}")
+        log(f"SSH access allowed on ports {ssh_port} (inbound) and {ssh_out_port} (outbound).")
+    else:
+        log("SSH access disabled.")
 
+# Install Sec tools and upgrade OS
+def install_security_tools():
+    log("Updating system packages...")
+    exec_command("apt update")
+    exec_command("apt upgrade -y")
+
+    log("Installing security tools...")
+    exec_command("apt install -y podman firejail bubblewrap ufw fail2ban clamav lynis apparmor apparmor-utils libpam-google-authenticator")
+
+# I would like to impliment a lcoal user MFA but... that may be too much at this time
+# def configure_mfa():
+#    log("Configuring Google MFA for SSH login...")
+#   with open("/etc/pam.d/sshd", "a") as pam_file:
+ #       pam_file.write("auth required pam_google_authenticator.so\n")
+#
+ #   exec_command(r"sed -i 's/^#ChallengeResponseAuthentication.*/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config")
+  #  exec_command(r"sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config")
+   # exec_command(r"sed -i 's/^UsePAM.*/UsePAM yes/' /etc/ssh/sshd_config")
+    #exec_command("systemctl restart sshd")
+  #  log("Google MFA configured. Users should run 'google-authenticator' to set up their accounts.")
+
+# OS sandboxing for web browsers
 def setup_sandboxing():
     update_status("Configuring Browser Sandboxing")
     user_home = os.path.expanduser("~" + os.getenv("SUDO_USER", os.getenv("USER", "")))
-    
-    browsers = {
-        "firefox": f"{user_home}/.mozilla",
-        "google-chrome": f"{user_home}/.config/google-chrome",
-        "chromium": f"{user_home}/.config/chromium",
-        "brave-browser": f"{user_home}/.config/BraveSoftware/Brave-Browser",
-        "opera": f"{user_home}/.config/opera"
+
+    browser_map = {
+        "firefox": (f"{user_home}/.mozilla", "/usr/bin/firefox"),
+        "google-chrome": (f"{user_home}/.config/google-chrome", "/usr/bin/google-chrome"),
+        "chromium-browser": (f"{user_home}/.config/chromium", "/usr/bin/chromium-browser"),
+        "chromium": (f"{user_home}/.config/chromium", "/usr/bin/chromium"),
+        "brave-browser": (f"{user_home}/.config/BraveSoftware", "/usr/bin/brave-browser"),
+        "opera": (f"{user_home}/.config/opera", "/usr/bin/opera"),
     }
 
-    for browser, profile in browsers.items():
+    for browser, (profile_dir, binary_path) in browser_map.items():
         if shutil.which(browser):
-            if os.path.exists(profile):
+            log(f"Configuring Bubblewrap sandbox for {browser}...")
+            
+            # Ensure the dir exists before committing (seems bwrap got lost on firefox and couldnt move)
+            if os.path.exists(profile_dir):
                 exec_command(
                     f"bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all "
                     f"--bind {profile} {profile} -- {browser}"
@@ -175,74 +165,53 @@ def setup_sandboxing():
         else:
             log(f"{browser} not found, skipping sandboxing.")
 
-def run_audits(): # edited to run clamv in background Excludes Videos, Downloads, and var/cache and lynis in quick mode. 
+
+# clamv + lynis background scan
+def run_audits():n
     update_status("Running Security Audits")
 
-    log("Updating ClamAV database...")
+    log("Setting up ClamAV...")
     exec_command("freshclam")
 
-    # Define Directories to Scan
     scan_dirs = ["/home", "/var/log", "/etc", "/usr/bin"]
 
     log("Starting ClamAV scan in the background...")
     for dir in scan_dirs:
-        exec_command(
-            f"clamscan -r {dir} --infected --max-filesize=100M --max-scansize=500M "
-            f"--exclude-dir='/home/tim/Videos' --exclude-dir='/home/tim/Downloads' --exclude-dir='/var/cache' "
-            f"--log={LOG_DIR}/clamav_scan_{DATE}.log &"
-        )
-
-    log("Running Lynis system audit...")
-    exec_command(f"lynis audit system --quick | tee {LOG_DIR}/lynis_audit_{DATE}.log")
-
-    log("Security audits completed. Check logs for details.")
-
-
-# START HARDENING
-# added clean exit and Calls status_gui.root.quit() before exiting.
-import signal
-
-def start_hardening():
-    """Runs the system hardening process inside the GUI event loop."""
-    try:
-        enable_cpu_mitigations()
-        install_security_tools()
-        
-        ssh_needed = input("Do you need SSH access? (y/n): ").strip().lower() == "y"
-        ssh_port = input("Enter inbound port for SSH (default 22): ").strip() or "22"
-        ssh_out_port = input("Enter outbound port for SSH (default 22): ").strip() or "22"
-
-        configure_firewall(ssh_needed, ssh_port, ssh_out_port)
-        setup_sandboxing()
-        run_audits()
-
-        status_gui.complete()
-        log("System hardening complete. Reboot required.")
-
-        if input("Reboot now? (y/n): ").strip().lower() == "y":
-            exec_command("sudo reboot")
-
-    except KeyboardInterrupt:
-        log("CTRL+C detected. Exiting safely...")
-        cleanup_and_exit()
-
-def cleanup_and_exit():
-    """Stops background ClamAV scans and closes the GUI on exit."""
-    log("Stopping any running ClamAV scans...")
-    subprocess.run("pkill clamscan", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        log(f"Scanning {dir} with ClamAV...")
+        exec_command(f"clamscan -r {dir} --log={LOG_DIR}/clamav_scan_{DATE}.log")
     
-    log("Closing GUI...")
-    status_gui.root.quit()
-    sys.exit(0)
+    log("Running Lynis system audit...")
+    exec_command(f"lynis audit system | tee {LOG_DIR}/lynis_audit_{DATE}.log")
 
-# Handle CTRL+C Globally
-signal.signal(signal.SIGINT, lambda sig, frame: cleanup_and_exit())
 
-# MAIN
+# Main Script Execution
 def main():
-    print_ascii_art()
-    status_gui.root.after(100, start_hardening)  
-    status_gui.run()
+    is_root_user()
+    log("Starting system hardening...")
+
+    enable_cpu_mitigations()
+    install_security_tools()
+
+    ssh_needed = input("Do you need SSH access? (y/n): ").strip().lower() == "y"
+    ssh_port = 22
+    ssh_out_port = 22
+
+    if ssh_needed:
+        ssh_port = input("Enter inbound port for SSH (default 22): ").strip() or 22
+        ssh_out_port = input("Enter outbound port for SSH (default 22): ").strip() or 22
+
+    configure_firewall(ssh_needed, ssh_port, ssh_out_port)
+    #configure_mfa()
+    setup_sandboxing()
+    run_audits()
+
+    log("System hardening complete. Please reboot the system for all changes to take effect.")
+    if input("Would you like to reboot now? (y/n): ").strip().lower() == "y":
+        exec_command("reboot")
+
+  # Ask user about Hard3n Qube script GUI
+    gui = Hard3nGUI()
+    gui.run()  # Run the GUI after full sript is completed
 
 if __name__ == "__main__":
     main()
