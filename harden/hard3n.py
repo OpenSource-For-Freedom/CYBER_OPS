@@ -5,17 +5,34 @@ import sys
 import logging
 from datetime import datetime
 import argparse
+import tkinter as tk
+from hard3n_tk import Hard3nGUI  # import GUI
+
+# Check if running as root
+def ensure_root():
+    if os.geteuid() != 0:
+        print("Restarting as root...")
+        try:
+            # Re-run the script with sudo
+            subprocess.run(["sudo", sys.executable] + sys.argv, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to elevate to root: {e}")
+        sys.exit(0)  # Exit the original non-root process
+
+# Call the function at the start of the script
+ensure_root()
+
 
 # Print the ASCII art and text
 def print_ascii_art():
     art = """
-        -----------------------------------------------------------------------
-                    H   H   AAAAA   RRRR    DDDD    333333    NN    N
-          ======== H   H  A     A  R   R   D   D       33    N N   N ========
-          ======= HHHHH  AAAAAAA  RRRR    D   D     33      N  N  N =========
-          ====== H   H  A     A  R  R    D   D       33    N   N N ==========
-                H   H  A     A  R   R   DDDD    333333    N    NN
-        -----------------------------------------------------------------------
+        --------------------------------------------------------------------------
+                    H|   H|  AAAAA    RRRR    DDDD    333333    NN     N|
+          ======== H|   H|  A    A   R   R   D   D       33    N N    N| ========
+          ======= HHHHH    AAAAAA   RRRR    D   D     33      N|  N  N| =========
+          ====== H|   H|  A    A   R  R    D   D       33    N|   N N| ==========
+                H|   H|  A    A   R   R   DDDD    333333    N|    NN|
+        --------------------------------------------------------------------------
                     "HARD3N" - The Linux Security Project
                     ----------------------------------------
                      A project focused on improving Linux
@@ -24,19 +41,25 @@ def print_ascii_art():
                          System protection measures.
                              License: MIT License
                                 Version: 1.3.1
-                               Dev: Tim Burns
+                               Dev: Tim "TANK" Burns
           GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
     print(art)
-import os
-import subprocess
-import logging
-from datetime import datetime
-import tkinter as tk
-from hard3n_tk import Hard3nGUI # import GUI
+    
+    # Status Counter that should work... should
+status_step = 0  # Global variable to track progress
+total_steps = 6   # Adjust this number based on your steps
+
+def update_status(step_name):
+    """Prints and logs the current step in execution"""
+    global status_step
+    status_step += 1
+    print(f"[{status_step}/{total_steps}] {step_name}...")
+    logging.info(f"[{status_step}/{total_steps}] {step_name}...")
+
 
 # Configure logging
-LOG_DIR = "/var/log/security_scans"
+LOG_DIR = os.path.expanduser("~/security_logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 DATE = datetime.now().strftime("%Y%m%d_%H%M%S")
 SCRIPT_LOG = os.path.join(LOG_DIR, f"script_execution_{DATE}.log")
@@ -71,81 +94,98 @@ def is_root_user():
         exit(1)
 
 
-# Functionality Implementations
+# Functionality CPU mits an grub boop
 def enable_cpu_mitigations():
     log("Enabling known mitigations for CPU vulnerabilities...")
     exec_command("cp /etc/default/grub /etc/default/grub.bak")
     exec_command(
-        r'sed -i \'s|GRUB_CMDLINE_LINUX="|GRUB_CMDLINE_LINUX="mitigations=auto spectre_v2=on '
-        r'spec_store_bypass_disable=on l1tf=full,force mds=full tsx=off tsx_async_abort=full '
-        r'kvm.nx_huge_pages=force l1d_flush=on mmio_stale_data=full retbleed=auto |\' /etc/default/grub'
+        'sed -i \'/^GRUB_CMDLINE_LINUX=/ s/"$/ mitigations=auto spectre_v2=on spec_store_bypass_disable=on '
+        'l1tf=full,force mds=full tsx=off tsx_async_abort=full l1d_flush=on mmio_stale_data=full retbleed=auto"/\' '
+        '/etc/default/grub'
     )
     exec_command("update-grub")
-    log("CPU mitigations enabled and GRUB configuration updated.")
+    log("CPU mitigations enabled and GRUB configuration updated successfully.")
 
-
+    
+# UFW stuff
 def configure_firewall(ssh_needed, ssh_port=22, ssh_out_port=22):
     log("Setting up UFW firewall...")
-    exec_command("ufw enable")
-    exec_command("ufw default deny incoming")
-    exec_command("ufw default allow outgoing")
+    exec_command("sudo ufw enable")
+    exec_command("sudo ufw default deny incoming")
+    exec_command("sudo ufw default allow outgoing")
 
     if ssh_needed:
-        exec_command(f"ufw allow {ssh_port}")
-        exec_command(f"ufw allow out {ssh_out_port}")
+        exec_command(f"sudo ufw allow {ssh_port}")
+        exec_command(f"sudo ufw allow out {ssh_out_port}")
         log(f"SSH access allowed on ports {ssh_port} (inbound) and {ssh_out_port} (outbound).")
     else:
         log("SSH access disabled.")
 
-
+# Install Sec tools and upgrade OS
 def install_security_tools():
     log("Updating system packages...")
     exec_command("apt update")
-    exec_command("apt upgrade -yy")
+    exec_command("apt upgrade -y")
 
     log("Installing security tools...")
-    exec_command("apt install -yy podman firejail bubblewrap ufw fail2ban clamav lynis apparmor apparmor-utils libpam-google-authenticator")
+    exec_command("apt install -y podman firejail bubblewrap ufw fail2ban clamav lynis apparmor apparmor-utils libpam-google-authenticator")
 
+# I would like to impliment a lcoal user MFA but... that may be too much at this time
+# def configure_mfa():
+#    log("Configuring Google MFA for SSH login...")
+#   with open("/etc/pam.d/sshd", "a") as pam_file:
+ #       pam_file.write("auth required pam_google_authenticator.so\n")
+#
+ #   exec_command(r"sed -i 's/^#ChallengeResponseAuthentication.*/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config")
+  #  exec_command(r"sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config")
+   # exec_command(r"sed -i 's/^UsePAM.*/UsePAM yes/' /etc/ssh/sshd_config")
+    #exec_command("systemctl restart sshd")
+  #  log("Google MFA configured. Users should run 'google-authenticator' to set up their accounts.")
 
-def configure_mfa():
-    log("Configuring Google MFA for SSH login...")
-    with open("/etc/pam.d/sshd", "a") as pam_file:
-        pam_file.write("auth required pam_google_authenticator.so\n")
-
-    exec_command(r"sed -i 's/^#ChallengeResponseAuthentication.*/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config")
-    exec_command(r"sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config")
-    exec_command(r"sed -i 's/^UsePAM.*/UsePAM yes/' /etc/ssh/sshd_config")
-    exec_command("systemctl restart sshd")
-    log("Google MFA configured. Users should run 'google-authenticator' to set up their accounts.")
-
-
+# OS sandboxing for web browsers
 def setup_sandboxing():
     log("Configuring sandboxing tools for web browsers...")
+    
+    # Get actual user home directory, even when running as root
+    user_home = os.path.expanduser("~" + os.getenv("SUDO_USER", os.getenv("USER", "")))
+
     browser_map = {
-        "firefox": ("/home/$USER/.mozilla", "/usr/bin/firefox"),
-        "google-chrome": ("/home/$USER/.config/google-chrome", "/usr/bin/google-chrome"),
-        "chromium-browser": ("/home/$USER/.config/chromium", "/usr/bin/chromium-browser"),
-        "chromium": ("/home/$USER/.config/chromium", "/usr/bin/chromium"),
-        "brave-browser": ("/home/$USER/.config/BraveSoftware", "/usr/bin/brave-browser"),
-        "opera": ("/home/$USER/.config/opera", "/usr/bin/opera")
+        "firefox": (f"{user_home}/.mozilla", "/usr/bin/firefox"),
+        "google-chrome": (f"{user_home}/.config/google-chrome", "/usr/bin/google-chrome"),
+        "chromium-browser": (f"{user_home}/.config/chromium", "/usr/bin/chromium-browser"),
+        "chromium": (f"{user_home}/.config/chromium", "/usr/bin/chromium"),
+        "brave-browser": (f"{user_home}/.config/BraveSoftware", "/usr/bin/brave-browser"),
+        "opera": (f"{user_home}/.config/opera", "/usr/bin/opera"),
     }
 
     for browser, (profile_dir, binary_path) in browser_map.items():
         if shutil.which(browser):
             log(f"Configuring Bubblewrap sandbox for {browser}...")
-            exec_command(
-                f"bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all "
-                f"--bind {profile_dir} {profile_dir} --bind /tmp /tmp -- {binary_path}"
-            )
+            
+            # Ensure the dir exists before committing (seems bwrap got lost on firefox and couldnt move)
+            if os.path.exists(profile_dir):
+                exec_command(
+                    f"bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all "
+                    f"--bind {profile_dir} {profile_dir} --bind /tmp /tmp -- {binary_path}"
+                )
+            else:
+                log(f"{browser} profile directory not found at {profile_dir}, skipping Bubblewrap sandboxing.")
         else:
             log(f"{browser} not found, skipping Bubblewrap sandboxing.")
 
 
-def run_audits():
+# clamv + lynis background scan
+def run_audits():n
+    update_status("Running Security Audits")
+
     log("Setting up ClamAV...")
     exec_command("freshclam")
-    exec_command(f"clamscan -r / --log={LOG_DIR}/clamav_scan_{DATE}.log")
 
+    scan_dirs = ["/home", "/var/log", "/etc", "/usr/bin"]
+    for dir in scan_dirs:
+        log(f"Scanning {dir} with ClamAV...")
+        exec_command(f"clamscan -r {dir} --log={LOG_DIR}/clamav_scan_{DATE}.log")
+    
     log("Running Lynis system audit...")
     exec_command(f"lynis audit system | tee {LOG_DIR}/lynis_audit_{DATE}.log")
 
@@ -167,7 +207,7 @@ def main():
         ssh_out_port = input("Enter outbound port for SSH (default 22): ").strip() or 22
 
     configure_firewall(ssh_needed, ssh_port, ssh_out_port)
-    configure_mfa()
+    #configure_mfa()
     setup_sandboxing()
     run_audits()
 
