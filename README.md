@@ -7,7 +7,9 @@
 ##                                   
 
 # **The Linux + DevSec Project**  
-### ***Hard3n*** - A single Linux package to sandbox a Debian OS and support systems, both endpoint and server.
+### **Hard3n** - A single Linux package to sandbox a Debian OS and support systems, both endpoint and server.
+### **CRACK** - a single WPA cracking tool to ensure your wifi is secure
+### **VeriFy** - A NEt Scanning tool that enumerates open ports, using dpkt and outputs that report on a file path for pen testers and red team members. 
 
 ---
 # **Overview**  
@@ -39,10 +41,12 @@ By following these guidelines, you will enhance system security, maintain stabil
 - **Console User Group Analysis in Whonix**  
   Investigate **Whonix's** console user groups to improve security management.  
   **Objective:** Reduce the risk of privilege escalation.  
+  - a huge thank you to @kiukiucat for adding this. 
 
 ---
 
 ## **Security Enhancements**
+### Here we can go over some basic sec permsion and configuration lines to get you started. 
 
 ### **Track and Document Setgid Permissions**
 
