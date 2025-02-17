@@ -1,4 +1,5 @@
 # HARD3N System
+[Images/github-header-image.png]
 
 ## Mission
 HARD3N is a security toolkit designed to enhance system protection through a combination of lockdown measures, network anonymization via Tor, and file security features. Its goal is to make your system more secure, anonymous, and resistant to threats.
