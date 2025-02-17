@@ -189,7 +189,7 @@ def start_hardening():
     run_audits()
 
     status_gui.complete()
-    log("✅ System hardening complete. Reboot required.")
+    log("System hardening complete. Reboot required.")
 
     if input("Reboot now? (y/n): ").strip().lower() == "y":
         exec_command("sudo reboot")
