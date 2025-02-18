@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 class Hard3nGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Hard3n System")
+        self.root.title("Hardn System")
         self.root.geometry("400x400")
 
         # Configure the main frame
@@ -22,7 +22,7 @@ class Hard3nGUI:
 
         # Add HARD3N title
         self.title_label = tk.Label(
-            self.frame, text="HARD3N", bg="#2b2b2b", fg="White",
+            self.frame, text="HARDN", bg="#2b2b2b", fg="White",
             font=("Helvetica", 24, "bold")
         )
         self.title_label.pack(pady=10)
@@ -52,10 +52,10 @@ class Hard3nGUI:
         """Logic to execute the Hard3n Qube script."""
         try:
             import subprocess
-            subprocess.run("python3 hard3n_qube.py", shell=True, check=True)
-            messagebox.showinfo("Success", "Hard3n Qube executed successfully.")
+            subprocess.run("python3 hardn_qube.py", shell=True, check=True)
+            messagebox.showinfo("Success", "Hardn Qube executed successfully.")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to execute Hard3n Qube: {e}")
+            messagebox.showerror("Error", f"Failed to execute Hardn Qube: {e}")
 
     def on_no(self):
         """Handler for the NO button."""
@@ -67,5 +67,5 @@ class Hard3nGUI:
 
 # Ex Hard3nGUI
 if __name__ == "__main__":
-    gui = Hard3nGUI()
+    gui = HardnGUI()
     gui.run()
