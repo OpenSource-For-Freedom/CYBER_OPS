@@ -40,35 +40,42 @@ def print_ascii_art():
                             Hardening and
                      System protection measures.
                          License: MIT License
-                            Version: 1.3.3
+                            Version: 1.3.4
                            Dev: Tim "TANK" Burns
       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
     print(art)
 
-# STATUS TRACKING
+# STATUS TRACK
 status_step = 0  
 total_steps = 8  
 
-# STATUS GUI
+# STATUS 
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("HARD3N - System Hardening Progress")
-        self.root.geometry("500x300")
+        self.root.geometry("550x350")
         self.root.resizable(False, False)
 
-        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 14), wraplength=480)
-        self.label.pack(pady=20)
+        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 14), wraplength=500)
+        self.label.pack(pady=10)
 
-        self.progress = ttk.Progressbar(self.root, length=400, mode="determinate")  
-        self.progress.pack(pady=10)
+        self.progress = ttk.Progressbar(self.root, length=450, mode="determinate")  
+        self.progress.pack(pady=5)
+
+        self.log_window = tk.Text(self.root, height=8, width=60, state=tk.DISABLED)
+        self.log_window.pack(pady=5)
+
+        self.toggle_button = tk.Button(self.root, text="Show Logs", command=self.toggle_logs)
+        self.toggle_button.pack(pady=5)
 
         self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
-        self.close_button.pack(pady=10)
+        self.close_button.pack(pady=5)
 
-        self.total_steps = 8
+        self.total_steps = total_steps
         self.current_step = 0
+        self.show_logs = False
 
     def update_status(self, message, progress=None):
         """Updates the GUI progress"""
@@ -80,6 +87,19 @@ class StatusGUI:
             progress_percent = int((self.current_step / self.total_steps) * 100)
             self.progress["value"] = progress_percent
         self.root.update_idletasks()
+
+    def add_log(self, message):
+        """Adds log output to the GUI log window"""
+        self.log_window.config(state=tk.NORMAL)
+        self.log_window.insert(tk.END, message + "\n")
+        self.log_window.config(state=tk.DISABLED)
+        self.log_window.see(tk.END)
+
+    def toggle_logs(self):
+        """Toggles between log view and progress bar"""
+        self.show_logs = not self.show_logs
+        self.log_window.pack_forget() if not self.show_logs else self.log_window.pack(pady=5)
+        self.toggle_button.config(text="Hide Logs" if self.show_logs else "Show Logs")
 
     def complete(self):
         """Marks completion of process"""
@@ -93,43 +113,6 @@ class StatusGUI:
         self.root.mainloop()
 
 status_gui = StatusGUI()
-
-# LOGGING
-LOG_DIR = os.path.expanduser("~/security_logs")
-os.makedirs(LOG_DIR, exist_ok=True)
-DATE = datetime.now().strftime("%Y%m%d_%H%M%S")
-SCRIPT_LOG = os.path.join(LOG_DIR, f"script_execution_{DATE}.log")
-
-logging.basicConfig(
-    filename=SCRIPT_LOG,
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-def log(message):
-    """Handles logging for both console and log file"""
-    print(message)
-    logging.info(message)
-
-# EXECUTE COMMANDS
-def exec_command(command, check=True):
-    """Executes a shell command and logs failures."""
-    try:
-        subprocess.run(command, shell=True, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError as e:
-        log(f"Command failed: {command} | Error: {e.stderr}")
-
-# UPDATE STATUS
-def update_status(step_name):
-    """Updates both the console log and GUI with progress markers."""
-    global status_step  
-    status_step += 1  
-    message = f"[{status_step}/{total_steps}] {step_name}..."
-    
-    log(message)  
-    print(message)  
-    status_gui.update_status(message)  
 
 # GET DISK SIZE
 def get_total_scan_size(scan_dirs):
@@ -146,13 +129,23 @@ def get_total_scan_size(scan_dirs):
     status_gui.update_status(f"Total scan size: {total_size / (1024**3):.2f} GB")  
     return total_size
 
-# CPU MITIGATIONS
-def enable_cpu_mitigations():
-    update_status("Enabling CPU Mitigations")
-    exec_command("cp /etc/default/grub /etc/default/grub.bak")
-    exec_command("update-grub")
+# GUI LOG AND STAT
+def log(message):
+    """Handles logging for both console and GUI"""
+    print(message)
+    logging.info(message)
+    status_gui.add_log(message)
 
-# CLAMAV AUDIT
+def update_status(step_name):
+    """Updates both the console log and GUI with progress markers."""
+    global status_step
+    status_step += 1
+    message = f"[{status_step}/{total_steps}] {step_name}..."
+    
+    log(message)  
+    status_gui.update_status(message)  
+
+# CLAMAV SCANNING WITH ESTIMATED TIME
 def run_audits():
     update_status("Running Security Audits")
     exec_command("freshclam")
@@ -166,24 +159,25 @@ def run_audits():
         shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )
 
-    for line in iter(process.stdout.readline, ''):
+    start_time = time.time()
+    dots = ["Scanning...", "Scanning..", "Scanning."]
+
+    for index, line in enumerate(iter(process.stdout.readline, '')):
         if "Scanned files" in line:
-            scanned_files = int(line.strip().split()[-1])  
-            scanned_size += scanned_files * 50 * 1024  
-
+            scanned_size += 100 * 1024 * 1024 
             progress_percent = min(int((scanned_size / total_scan_size) * 100), 100)
-            update_status(f"Scanning: {progress_percent}% complete")
-            status_gui.update_status(f"Scanning: {progress_percent}% complete", progress_percent)
-
+            elapsed_time = time.time() - start_time
+            estimated_time = (elapsed_time / (scanned_size + 1)) * (total_scan_size - scanned_size)
+            status_gui.update_status(f"{dots[index % 3]} {progress_percent}% complete - ETA: {int(estimated_time)}s", progress_percent)
+    
     process.wait()
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
     update_status("Security audits completed.")
 
-# START HARDENING
+# START
 def start_hardening():
     threading.Thread(target=lambda: [
-        enable_cpu_mitigations(),
-        run_audits(),
+        run_audits()
     ], daemon=True).start()
 
 # MAIN
