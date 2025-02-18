@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 import argparse
 
-LOG_FILE = "/var/log/hard3n_deep.log"
+LOG_FILE = "/var/log/hardn_deep.log"
 
 # Set up logging
 logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format="%(asctime)s - %(message)s")
@@ -85,7 +85,7 @@ def secure_files(test_mode=False):
 
 def main():
     # Argument parsing
-    parser = argparse.ArgumentParser(description="Hard3n Security Hardening Script")
+    parser = argparse.ArgumentParser(description="Hardn Security Hardening Script")
     parser.add_argument("--test", action="store_true", help="Run in test mode without applying changes")
     args = parser.parse_args()
     test_mode = args.test
@@ -100,7 +100,7 @@ def main():
     restrict_non_local_logins(test_mode)
     secure_files(test_mode)
 
-    log("[+] hard3n_dark.py completed successfully.")
+    log("[+] hardn_dark.py completed successfully.")
 
     if __name__ == "__main__":
         main()

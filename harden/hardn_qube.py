@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 
 # Ensure log dir exists
 LOG_DIR = "/var/log"
-LOG_FILE = "hard3n_qube.log"
+LOG_FILE = "hardn_qube.log"
 log_path = os.path.join(LOG_DIR, LOG_FILE)
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR, mode=0o755, exist_ok=True)
