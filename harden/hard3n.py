@@ -11,7 +11,7 @@ from tkinter import ttk
 from datetime import datetime
 from hard3n_tk import Hard3nGUI  
 
-# Ensure root
+# ROOT ENSURE
 def ensure_root():
     if os.geteuid() != 0:
         print("Restarting as root...")
@@ -23,7 +23,7 @@ def ensure_root():
 
 ensure_root()
 
-# Print ASCII banner
+# PRINT BANNER
 def print_ascii_art():
     art = """
     --------------------------------------------------------------------------
@@ -40,13 +40,17 @@ def print_ascii_art():
                             Hardening and
                      System protection measures.
                          License: MIT License
-                            Version: 1.3.2
+                            Version: 1.3.3
                            Dev: Tim "TANK" Burns
       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
     print(art)
 
-# STATUS GUI 
+# STATUS TRACKING
+status_step = 0  
+total_steps = 8  
+
+# STATUS GUI
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
@@ -90,7 +94,7 @@ class StatusGUI:
 
 status_gui = StatusGUI()
 
-# CONFIGURE LOGGING
+# LOGGING
 LOG_DIR = os.path.expanduser("~/security_logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 DATE = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -104,40 +108,58 @@ logging.basicConfig(
 )
 
 def log(message):
+    """Handles logging for both console and log file"""
     print(message)
     logging.info(message)
 
+# EXECUTE COMMANDS
 def exec_command(command, check=True):
+    """Executes a shell command and logs failures."""
     try:
         subprocess.run(command, shell=True, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
         log(f"Command failed: {command} | Error: {e.stderr}")
 
-# CLEAN EXIT
-def cleanup_and_exit(signal_received=None, frame=None):
-    """Handles clean exit when CTRL+C is pressed."""
-    log("CTRL+C detected. Cleaning up and exiting...")
-    subprocess.run("pkill clamscan", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    subprocess.run("pkill lynis", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if status_gui.root.winfo_exists():
-        status_gui.root.quit()
-    sys.exit(0)
+# UPDATE STATUS
+def update_status(step_name):
+    """Updates both the console log and GUI with progress markers."""
+    global status_step  
+    status_step += 1  
+    message = f"[{status_step}/{total_steps}] {step_name}..."
+    
+    log(message)  
+    print(message)  
+    status_gui.update_status(message)  
 
-signal.signal(signal.SIGINT, cleanup_and_exit)
+# GET DISK SIZE
+def get_total_scan_size(scan_dirs):
+    """Calculates the total disk space used by the directories being scanned."""
+    total_size = 0
+    for directory in scan_dirs:
+        try:
+            output = subprocess.check_output(f"du -sb {directory} 2>/dev/null", shell=True, text=True).split()[0]
+            total_size += int(output)
+        except (subprocess.CalledProcessError, IndexError, ValueError):
+            log(f"Skipping {directory}: Unable to calculate size.")
+    
+    log(f"Total disk space to scan: {total_size / (1024**3):.2f} GB")  
+    status_gui.update_status(f"Total scan size: {total_size / (1024**3):.2f} GB")  
+    return total_size
 
-# SYSTEM HARDENING
+# CPU MITIGATIONS
 def enable_cpu_mitigations():
-    status_gui.update_status("Enabling CPU Mitigations")
+    update_status("Enabling CPU Mitigations")
     exec_command("cp /etc/default/grub /etc/default/grub.bak")
     exec_command("update-grub")
 
-def setup_sandboxing():
-    status_gui.update_status("Configuring Browser Sandboxing")
-    exec_command("apt install -y firejail bubblewrap")
-
+# CLAMAV AUDIT
 def run_audits():
-    status_gui.update_status("Running Security Audits")
+    update_status("Running Security Audits")
     exec_command("freshclam")
+
+    scan_dirs = ["/home", "/var/log", "/etc", "/usr/bin"]
+    total_scan_size = get_total_scan_size(scan_dirs)
+    scanned_size = 0
 
     process = subprocess.Popen(
         "clamscan -r /home --infected --max-filesize=100M --max-scansize=500M --log=/var/log/clamav_scan.log",
@@ -146,35 +168,22 @@ def run_audits():
 
     for line in iter(process.stdout.readline, ''):
         if "Scanned files" in line:
-            status_gui.update_status(f"Scanning: {line.strip()}")
-    
+            scanned_files = int(line.strip().split()[-1])  
+            scanned_size += scanned_files * 50 * 1024  
+
+            progress_percent = min(int((scanned_size / total_scan_size) * 100), 100)
+            update_status(f"Scanning: {progress_percent}% complete")
+            status_gui.update_status(f"Scanning: {progress_percent}% complete", progress_percent)
+
     process.wait()
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
-    status_gui.update_status("Security audits completed.")
+    update_status("Security audits completed.")
 
-# NEW SECURITY TASKS
-def enable_unattended_upgrades():
-    status_gui.update_status("Enabling Unattended Security Updates")
-    exec_command("apt install -y unattended-upgrades")
-    exec_command("dpkg-reconfigure -plow unattended-upgrades")
-
-def setup_security_cron_jobs():
-    status_gui.update_status("Setting up security automation")
-    cron_jobs = [
-        "@daily apt update && apt upgrade -y",
-        "@weekly lynis audit system >> /var/log/lynis_weekly.log"
-    ]
-    for job in cron_jobs:
-        exec_command(f"(crontab -l 2>/dev/null; echo \"{job}\") | crontab -")
-
-# START IT UP
+# START HARDENING
 def start_hardening():
     threading.Thread(target=lambda: [
         enable_cpu_mitigations(),
-        setup_sandboxing(),
         run_audits(),
-        enable_unattended_upgrades(),
-        setup_security_cron_jobs()
     ], daemon=True).start()
 
 # MAIN
