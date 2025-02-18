@@ -9,7 +9,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk  
 from datetime import datetime
-from hard3n_tk import Hard3nGUI  
+from harden.hardn_tk import HardnGUI  
 
 # ROOT ENSURE
 def ensure_root():
@@ -66,9 +66,9 @@ logging.basicConfig(
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("HARDN - System Hardening Progress")
+        self.root.title("HARDN - Debian Linux Security Tool")
         self.root.geometry("600x400")
-        self.root.resizable(False, False)
+        self.root.resizable(true, true)
 
         self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 12), wraplength=580)
         self.label.pack(pady=10)
@@ -123,7 +123,7 @@ def exec_command(command):
 
 # SYSTEM HARDENING
 def configure_firewall():
-    status_gui.update_status("🔒 Configuring Firewall...")
+    status_gui.update_status("Configuring Firewall...")
     exec_command("ufw default deny incoming")
     exec_command("ufw default allow outgoing")
     exec_command("ufw --force enable")
