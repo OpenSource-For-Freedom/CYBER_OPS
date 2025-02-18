@@ -7,7 +7,7 @@ import time
 import logging
 import threading
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk  
 from datetime import datetime
 from hard3n_tk import Hard3nGUI  
 
@@ -40,13 +40,31 @@ def print_ascii_art():
                             Hardening and
                      System protection measures.
                          License: MIT License
-                            Version: 1.3.5
+                            Version: 1.3.7
                            Dev: Tim "TANK" Burns
       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
     print(art)
 
-# STATUS GUI
+# LOGGING SETUP
+LOG_DIR = os.path.expanduser("~/security_logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+DATE = datetime.now().strftime("%Y%m%d_%H%M%S")
+SCRIPT_LOG = os.path.join(LOG_DIR, f"script_execution_{DATE}.log")
+
+logging.basicConfig(
+    filename=SCRIPT_LOG,
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+def log(message):
+    """Handles logging for both console and log file"""
+    print(message)
+    logging.info(message)
+
+# STATUS GUI 
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
@@ -57,7 +75,7 @@ class StatusGUI:
         self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 14), wraplength=480)
         self.label.pack(pady=20)
 
-        self.progress = ttk.Progressbar(self.root, length=400, mode="determinate")
+        self.progress = ttk.Progressbar(self.root, length=400, mode="determinate")  
         self.progress.pack(pady=10)
 
         self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
@@ -90,24 +108,7 @@ class StatusGUI:
 
 status_gui = StatusGUI()
 
-# CONFIGURE LOGGING
-LOG_DIR = os.path.expanduser("~/security_logs")
-os.makedirs(LOG_DIR, exist_ok=True)
-DATE = datetime.now().strftime("%Y%m%d_%H%M%S")
-SCRIPT_LOG = os.path.join(LOG_DIR, f"script_execution_{DATE}.log")
-
-logging.basicConfig(
-    filename=SCRIPT_LOG,
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-# LOGGING & COMMAND EXECUTION
-def log(message):
-    print(message)
-    logging.info(message)
-
+# EXECUTE SHELL COMMANDS
 def exec_command(command, check=True):
     """Executes shell commands with logging and error handling."""
     try:
@@ -118,19 +119,27 @@ def exec_command(command, check=True):
         log(f"Command failed: {command}\nError: {e.stderr.strip()}")
         return None
 
-# INSTALL REQUIRED SECURITY TOOLS
-def install_missing_tools():
-    tools = ["podman", "firejail", "bubblewrap", "ufw", "fail2ban", "clamav", "lynis", "apparmor", "apparmor-utils"]
+# INSTALL MISSING SECURITY TOOLS
+def ensure_security_tools():
+    """Ensures necessary security tools are installed"""
+    tools = ["ufw", "fail2ban", "clamav", "apparmor", "apparmor-utils", "bubblewrap"]
     for tool in tools:
         if shutil.which(tool) is None:
             log(f"{tool} not found. Installing...")
             exec_command(f"apt install -y {tool}")
 
-install_missing_tools()
+# CONFIGURE UFW WITHOUT BREAKING INTERNET
+def configure_firewall():
+    """Configures UFW to block inbound while allowing outbound traffic"""
+    update_status("Configuring Firewall")
+    exec_command("ufw default deny incoming")
+    exec_command("ufw default allow outgoing")  
+    exec_command("ufw enable")
+    log("Firewall configured to block inbound and allow outbound connections.")
 
-# DISK SCAN SIZE CALCULATION
+# GET TOTAL SCAN SIZE
 def get_total_scan_size(scan_dirs):
-    """Calculates the total disk space used by the directories being scanned."""
+    """Calculates total disk space being scanned."""
     total_size = 0
     for directory in scan_dirs:
         try:
@@ -138,51 +147,44 @@ def get_total_scan_size(scan_dirs):
             total_size += int(output)
         except (subprocess.CalledProcessError, IndexError, ValueError):
             log(f"Skipping {directory}: Unable to calculate size.")
-
-    log(f"Total disk space to scan: {total_size / (1024**3):.2f} GB")
-    status_gui.update_status(f"Total scan size: {total_size / (1024**3):.2f} GB")
+    
+    log(f"Total disk space to scan: {total_size / (1024**3):.2f} GB")  
+    status_gui.update_status(f"Total scan size: {total_size / (1024**3):.2f} GB")  
     return total_size
 
-# SECURITY AUDITS WITH LIVE UPDATES
+# RUN SECURITY AUDITS
 def run_audits():
-    """Runs ClamAV and Lynis security audits with progress tracking."""
     update_status("Running Security Audits")
-
-    log("Updating ClamAV database...")
     exec_command("freshclam")
 
     scan_dirs = ["/home", "/var/log", "/etc", "/usr/bin"]
     total_scan_size = get_total_scan_size(scan_dirs)
     scanned_size = 0
 
-    log("Starting ClamAV scan...")
+    process = subprocess.Popen(
+        "clamscan -r /home --infected --max-filesize=100M --max-scansize=500M --log=/var/log/clamav_scan.log",
+        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+
+    for line in iter(process.stdout.readline, ''):
+        if "Scanned files" in line:
+            scanned_size += 100 * 1024 * 1024 
+            progress_percent = min(int((scanned_size / total_scan_size) * 100), 100)
+            update_status(f"Scanning: {progress_percent}% complete", progress_percent)
     
-    for index, directory in enumerate(scan_dirs, start=1):
-        update_status(f"Scanning: {directory} ({index}/{len(scan_dirs)})")
-
-        process = subprocess.Popen(
-            f"clamscan -r {directory} --infected --max-filesize=100M --max-scansize=500M --log={LOG_DIR}/clamav_scan_{DATE}.log",
-            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
-
-        for line in iter(process.stdout.readline, ''):
-            if "Scanned files" in line:
-                scanned_size += 100 * 1024 * 1024
-                progress_percent = min(int((scanned_size / total_scan_size) * 100), 100)
-                status_gui.update_status(f"Scanning: {progress_percent}% complete", progress_percent)
-
-        process.wait()
-        log(f"Completed scan for {directory}")
-
-    exec_command("lynis audit system --quick | tee {LOG_DIR}/lynis_audit_{DATE}.log")
+    process.wait()
+    exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
     update_status("Security audits completed.")
 
-# MAIN FUNCTION
+# START HARDENING
 def start_hardening():
+    ensure_security_tools()
     threading.Thread(target=lambda: [
-        run_audits(),
+        configure_firewall(),
+        run_audits()
     ], daemon=True).start()
 
+# MAIN
 def main():
     print_ascii_art()
     status_gui.root.after(100, start_hardening)
