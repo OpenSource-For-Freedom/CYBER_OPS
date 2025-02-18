@@ -9,7 +9,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk  
 from datetime import datetime
-from hard3n_tk import Hard3nGUI  
+from hardn_tk import HardnGUI  
 
 # ROOT ENSURE
 def ensure_root():
@@ -123,7 +123,7 @@ def exec_command(command):
 
 # SYSTEM HARDENING
 def configure_firewall():
-    status_gui.update_status("🔒 Configuring Firewall...")
+    status_gui.update_status("Configuring Firewall...")
     exec_command("ufw default deny incoming")
     exec_command("ufw default allow outgoing")
     exec_command("ufw --force enable")
