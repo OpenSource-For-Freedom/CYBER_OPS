@@ -225,7 +225,7 @@ def run_audits():
         status_gui.update_status(f"{task_name} in progress... ({progress_percent}%)", progress_percent)
         
 # UPDATE LYNIS and push CLAMV
-  def run_audits():
+    def run_audits():
     """Runs security audits with progress tracking, ensuring freshclam runs last, and sets a timeout for ClamAV."""
     total_steps = 4  
     current_step = 0
