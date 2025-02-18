@@ -9,7 +9,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk  
 from datetime import datetime
-from hardn_tk import HardnGUI  
+# from hardn_tk import HardnGUI  
 
 # ROOT ENSURE
 def ensure_root():
@@ -121,6 +121,22 @@ def exec_command(command):
         status_gui.update_status(f"{command}\nError: {e.stderr.strip()}\n")
         return None
 
+# GRUB and CPU
+def enable_cpu_mitigations():
+    status_gui.update_status("Applying CPU & IOMMU Mitigations")
+
+    exec_command("cp /etc/default/grub /etc/default/grub.bak")
+
+    # update sec for GRUB 
+    exec_command(
+        'sed -i \'s/^GRUB_CMDLINE_LINUX="/GRUB_CMDLINE_LINUX="mitigations=auto spectre_v2=on '
+        'spec_store_bypass_disable=on l1tf=full,force mds=full tsx=off tsx_async_abort=full '
+        'l1d_flush=on mmio_stale_data=full retbleed=auto iommu=force iommu.passthrough=0 iommu.strict=1 '
+        'intel_iommu=on amd_iommu=force_isolation efi=disable_early_pci_dma" /\' /etc/default/grub'
+    )
+
+    exec_command("update-grub")
+
 # SYSTEM HARDENING
 def configure_firewall():
     status_gui.update_status("Configuring Firewall...")
@@ -156,9 +172,9 @@ def setup_security_cron_jobs():
 # RUN SECURITY AUDITS (ClamAV runs in the background)
 def run_audits():
     status_gui.update_status("Running Security Audits...")
-    exec_command("freshclam &")  # Run in background
+    exec_command("freshclam &")  # bkgrnd
     log_file = f"/var/log/clamav_scan_{DATE}.log"
-    exec_command(f"clamscan -r /home --infected --log={log_file} &")  # Run in background
+    exec_command(f"clamscan -r /home --infected --log={log_file} &")  # bkgrnd
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
 
 # MAIN FUNCTION
