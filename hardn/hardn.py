@@ -9,7 +9,8 @@ import threading
 import tkinter as tk
 from tkinter import ttk  
 from datetime import datetime
-from harden.hardn_tk import HardnGUI  
+from hardn.hardn_tk import HardnGUI
+
 
 # ROOT ENSURE
 def ensure_root():
