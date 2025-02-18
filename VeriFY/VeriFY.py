@@ -9,6 +9,33 @@ from tkinter import messagebox, filedialog, ttk
 import sys
 import re
 
+
+# PRINT BANNER
+def print_ascii_art():
+    art = """
+           ██▒   █▓▓█████  ██▀███   ██▓  █████▒▓██   ██▓
+           ▓██░   █▒▓█   ▀ ▓██ ▒ ██▒▓██▒▓██   ▒  ▒██  ██▒
+           ▓██  █▒░▒███   ▓██ ░▄█ ▒▒██▒▒████ ░   ▒██ ██░
+           ▒██ █░░▒▓█  ▄ ▒██▀▀█▄  ░██░░▓█▒  ░   ░ ▐██▓░
+            ▒▀█░  ░▒████▒░██▓ ▒██▒░██░░▒█░      ░ ██▒▓░
+            ░ ▐░  ░░ ▒░ ░░ ▒▓ ░▒▓░░▓   ▒ ░       ██▒▒▒ 
+              ░ ░░   ░ ░  ░  ░▒ ░ ▒░ ▒ ░ ░       ▓██ ░▒░ 
+                ░░     ░     ░░   ░  ▒ ░ ░ ░     ▒ ▒ ░░  
+                 ░     ░  ░   ░      ░           ░ ░     
+                ░                                ░ ░     
+
+                "VeriFy" - The Linux Security Project
+                ----------------------------------------
+                 A project focused on improving Linux
+                security by automating, containerizing
+                            Hardening and
+                     System protection measures.
+                         License: MIT License
+                            Version: 1.1.1
+                           Dev: Tim "TANK" Burns
+      GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
+"""
+print(art)
 # Validate IPv4 Address
 def is_valid_ip(ip):
     pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
