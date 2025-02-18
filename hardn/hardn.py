@@ -125,8 +125,8 @@ def exec_command(command):
 def configure_firewall():
     status_gui.update_status("Configuring Firewall...")
     exec_command("ufw default deny incoming")
-    exec_command("ufw default allow outgoing")
-    exec_command("ufw --force enable")
+    username = getpass.getuser()
+    exec_command(f"chage -M 90 -m 7 -W 14 {username}")
 
 def enforce_password_policies():
     status_gui.update_status("Enforcing Password Policies...")
@@ -135,7 +135,7 @@ def enforce_password_policies():
 def track_setgid_permissions():
     status_gui.update_status("Tracking SetGID Permissions...")
     exec_command("find / -mount -perm -2000 -type f -exec ls -ld {} \\; > /root/setgid_permissions.txt")
-    exec_command("chown $(whoami):$(whoami) /root/setgid_permissions.txt")
+    exec_command("chown $(username):$(username) /root/setgid_permissions.txt")
 
 def enable_auto_updates():
     status_gui.update_status("Enabling Automatic Security Updates...")
