@@ -1,3 +1,5 @@
+# its haning up on security audits, going to let it run and see where it goes. 
+
 import os
 import subprocess
 import shutil
@@ -40,7 +42,7 @@ def print_ascii_art():
                             Hardening and
                      System protection measures.
                          License: MIT License
-                            Version: 1.4.0
+                            Version: 1.4.2
                            Dev: Tim "TANK" Burns
       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
@@ -62,6 +64,16 @@ logging.basicConfig(
 def log(message):
     print(message)
     logging.info(message)
+
+# EXECUTE COMMAND SAFELY
+def exec_command(command):
+    try:
+        result = subprocess.run(command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        log(f"Command executed: {command}\nOutput: {result.stdout.strip()}")
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        log(f"Command failed: {command}\nError: {e.stderr.strip()}")
+        return None
 
 # STATUS GUI 
 class StatusGUI:
@@ -104,71 +116,52 @@ class StatusGUI:
 
 status_gui = StatusGUI()
 
-# SYSTEM HARDENING FUNCTIONS
-
+# INSTALL SECURITY TOOLS IF MISSING
 def ensure_security_tools():
     tools = ["ufw", "fail2ban", "clamav", "apparmor", "apparmor-utils", "bubblewrap"]
     for tool in tools:
         if shutil.which(tool) is None:
             log(f"{tool} not found. Installing...")
-            exec_command(f"apt install -y {tool}")
+            status_gui.update_status(f"Installing {tool}...")
+            exec_command(f"DEBIAN_FRONTEND=noninteractive apt install -y {tool}")
 
+# SYSTEM HARDENING FUNCTIONS
 def configure_firewall():
-    update_status("Configuring Firewall")
+    status_gui.update_status("Configuring Firewall")
     exec_command("ufw default deny incoming")
     exec_command("ufw default allow outgoing")
-    exec_command("ufw enable")
+    exec_command("ufw --force enable")  # Prevents user confirmation freeze
 
 def enforce_password_policies():
-    update_status("Enforcing Password Policies")
+    status_gui.update_status("Enforcing Password Policies")
     exec_command("chage -M 90 -m 7 -W 14 $(whoami)")
 
-def restrict_sudo_access():
-    update_status("Restricting Sudo Access")
-    exec_command("echo '$(whoami) ALL=(ALL) ALL, !/bin/su, !/usr/bin/passwd' | sudo tee -a /etc/sudoers")
-
-def harden_grub():
-    update_status("Hardening GRUB Security")
-    exec_command("echo 'GRUB_CMDLINE_LINUX_DEFAULT=\"quiet splash apparmor=1 security=apparmor\"' | sudo tee -a /etc/default/grub")
-    exec_command("update-grub")
-
-def harden_network():
-    update_status("Applying Network Hardening")
-    exec_command("echo 'net.ipv4.conf.all.rp_filter = 1' | sudo tee -a /etc/sysctl.conf")
-    exec_command("sysctl -p")
-
 def track_setgid_permissions():
-    update_status("Tracking SetGID Permissions")
-    exec_command("find / -mount -perm -2000 -type f -exec ls -ld {} \\; > /home/user/setgid_.txt")
-    exec_command("chown user:user /home/user/setgid_.txt")
-
-def setup_audit_logs():
-    update_status("Enabling Security Audit Logs")
-    exec_command("auditctl -e 1")
+    status_gui.update_status("Tracking SetGID Permissions")
+    home_path = os.path.expanduser("~")
+    setgid_log = os.path.join(home_path, "setgid_permissions.txt")
+    exec_command(f"find / -mount -perm -2000 -type f -exec ls -ld {{}} \\; > {setgid_log}")
+    exec_command(f"chown $(whoami):$(whoami) {setgid_log}")
 
 def enable_auto_updates():
-    """Enables unattended security updates."""
-    update_status("Enabling Automatic Security Updates")
+    status_gui.update_status("Enabling Automatic Security Updates")
     exec_command("apt install -y unattended-upgrades")
     exec_command("dpkg-reconfigure -plow unattended-upgrades")
 
 def setup_security_cron_jobs():
-    """Creates cron jobs for regular security maintenance."""
-    update_status("Setting up security automation")
-    
+    status_gui.update_status("Setting up security automation")
     cron_jobs = [
         "@daily apt update && apt upgrade -y",
         "@weekly lynis audit system >> /var/log/lynis_weekly.log",
-        "@weekly find / -perm -2000 -type f -exec ls -ld {} \\; > /home/user/setgid_.txt"
+        "@weekly find / -perm -2000 -type f -exec ls -ld {} \\; > ~/setgid_permissions.txt"
     ]
-
     for job in cron_jobs:
         exec_command(f"(crontab -l 2>/dev/null; echo \"{job}\") | crontab -")
 
 def run_audits():
-    update_status("Running Security Audits")
+    status_gui.update_status("Running Security Audits")
     exec_command("freshclam")
-    exec_command("clamscan -r /home --infected --log=/var/log/clamav_scan.log")
+    exec_command("clamscan -r /home --infected --log=/var/log/clamav_scan.log &")  # Runs in background
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
 
 # MAIN FUNCTION
@@ -177,11 +170,7 @@ def start_hardening():
     threading.Thread(target=lambda: [
         configure_firewall(),
         enforce_password_policies(),
-        restrict_sudo_access(),
-        harden_grub(),
-        harden_network(),
         track_setgid_permissions(),
-        setup_audit_logs(),
         enable_auto_updates(),
         setup_security_cron_jobs(),
         run_audits()
