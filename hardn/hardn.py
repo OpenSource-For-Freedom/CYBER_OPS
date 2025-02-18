@@ -3,7 +3,8 @@ import subprocess
 import shutil
 import sys
 import signal
-import signal
+import threading
+import shlex
 
 # EXIT
 def clean_exit(signum=None, frame=None):
@@ -142,12 +143,48 @@ def exec_command(command):
         status_gui.update_status(f"{command}\nError: {e.stderr.strip()}\n")
         return None
 
-# SYSTEM HARDENING
+# SYSTEM HARDENING... THIS IS THE HAIL MARY
 def configure_firewall():
     status_gui.update_status("Configuring Firewall...")
     exec_command("ufw default deny incoming")
     username = getpass.getuser()
     exec_command(f"chage -M 90 -m 7 -W 14 {username}")
+    
+def configure_kernel_security():
+    """Configures GRUB for kernel hardening and CPU mitigations."""
+    status_gui.update_status("Configuring Kernel Security Settings...")
+
+    # BACKUP EXIST
+    backup_file = "/etc/default/grub.bak"
+    if not os.path.exists(backup_file):
+        exec_command("cp /etc/default/grub /etc/default/grub.bak")
+
+    # GRUB 
+    grub_config = """
+    GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT lsm=apparmor,landlock,lockdown,yama,integrity,bpf apparmor=1 security=apparmor"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX mitigations=auto spectre_v2=on spec_store_bypass_disable=on"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX l1tf=full,force mds=full tsx=off tsx_async_abort=full"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX kvm.nx_huge_pages=force l1d_flush=on mmio_stale_data=full retbleed=auto"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX intel_iommu=on amd_iommu=force_isolation efi=disable_early_pci_dma"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX iommu=force iommu.passthrough=0 iommu.strict=1"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX kvm-intel.vmentry_l1d_flush=always random.trust_bootloader=off"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX slab_nomerge page_alloc.shuffle=1 randomize_kstack_offset=on debugfs=off"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX init_on_alloc=1 init_on_free=1 pti=on vsyscall=none"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX loglevel=0 acpi_no_watchdog nohz_full=all nohibernate ssbd=force-on"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX topology=on thermal.off=1 noearly ioapicreroute pcie_bus_perf"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX rcu_nocb_poll mce=off nohpet idle=poll numa=noacpi gather_data_sampling=force"
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX net.ifnames=0 ipv6.disable=1 hibernate=no"
+    """
+
+    # WRITE NEW GRUB
+    with open("/etc/default/grub", "a") as grub_file:
+        grub_file.write(grub_config)
+
+    # UPDATE GRUB TO APPLY
+    exec_command("update-grub")
+    status_gui.update_status("Kernel Security Configurations Applied. A Reboot is Required.")
+
+
 
 def enforce_password_policies():
     status_gui.update_status("Enforcing Password Policies...")
@@ -176,22 +213,81 @@ def setup_security_cron_jobs():
 
 # RUN SECURITY AUDITS 
 def run_audits():
-    status_gui.update_status("Running Security Audits...")
-    exec_command("freshclam &")  
-    log_file = f"/var/log/clamav_scan_{DATE}.log"
-    exec_command(f"clamscan -r /home --infected --log={log_file} &")  
+    """Runs security audits with progress tracking, ensuring freshclam runs last."""
+    total_steps = 4  # steps
+    current_step = 0
+
+    def update_progress(task_name):
+        """Helper function to update progress dynamically."""
+        nonlocal current_step
+        current_step += 1
+        progress_percent = int((current_step / total_steps) * 100)
+        status_gui.update_status(f"{task_name} in progress... ({progress_percent}%)", progress_percent)
+        
+# UPDATE LYNIS and push CLAMV
+  def run_audits():
+    """Runs security audits with progress tracking, ensuring freshclam runs last, and sets a timeout for ClamAV."""
+    total_steps = 4  
+    current_step = 0
+
+    def update_progress(task_name):
+        """Helper function to update progress dynamically."""
+        nonlocal current_step
+        current_step += 1
+        progress_percent = int((current_step / total_steps) * 100)
+        status_gui.update_status(f"{task_name} in progress... ({progress_percent}%)", progress_percent)
+
+    # 1: CHECK & UPDATE LYNIS
+    update_progress("Checking for Lynis updates...")
+    lynis_version = exec_command("lynis show version")
+    if not lynis_version or "command not found" in lynis_version.lower():
+        status_gui.update_status("Lynis is not installed. Installing now...")
+        exec_command("apt install -y lynis")
+    else:
+        exec_command("apt update && apt install --only-upgrade -y lynis")
+
+    # 2: RUN LYNIS FIRST
+    update_progress("Running Lynis Security Audit")
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
+
+    # 3: RUN CLAMAV SCAN -TIMEOUT 
+    update_progress("Scanning system with ClamAV")
+    log_file = f"/var/log/clamav_scan_{DATE}.log"
+
+    def run_clamscan():
+        """Runs ClamAV scan with a timeout to prevent freezing."""
+        try:
+            exec_command(f"timeout 600 clamscan -r /home --infected --log={log_file}") 
+        except Exception as e:
+            logging.error(f"ClamAV scan failed: {e}")
+            status_gui.update_status("ClamAV scan encountered an issue. Check logs.")
+
+    threading.Thread(target=run_clamscan, daemon=True).start()  
+
+    # 4: RUN FRESHCLAM LAST (In Separate Thread)
+    def run_freshclam():
+        update_progress("Updating ClamAV database (Freshclam)")
+        exec_command("freshclam")
+        status_gui.update_status("Security Audits Completed!", 100)  
+
+    threading.Thread(target=run_freshclam, daemon=True).start()  
+
 
 # MAIN FUNCTION
 def start_hardening():
-    threading.Thread(target=lambda: [
-        configure_firewall(),
-        enforce_password_policies(),
-        track_setgid_permissions(),
-        enable_auto_updates(),
-        setup_security_cron_jobs(),
-        run_audits()
-    ], daemon=True).start()
+    def run_hardening():
+        configure_firewall()
+        enforce_password_policies()
+        track_setgid_permissions()
+        enable_auto_updates()
+        setup_security_cron_jobs()
+        configure_kernel_security() # GRUB SHOULD BE FIRST
+        run_audits()  
+
+        status_gui.complete()  
+
+    threading.Thread(target=run_hardening, daemon=True).start()
+
 
 def main():
     print_ascii_art()
