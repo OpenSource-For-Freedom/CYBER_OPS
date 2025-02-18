@@ -7,7 +7,7 @@ import time
 import logging
 import threading
 import tkinter as tk
-from tkinter import ttk  
+from tkinter import ttk
 from datetime import datetime
 from hard3n_tk import Hard3nGUI  
 
@@ -40,42 +40,31 @@ def print_ascii_art():
                             Hardening and
                      System protection measures.
                          License: MIT License
-                            Version: 1.3.4
+                            Version: 1.3.5
                            Dev: Tim "TANK" Burns
       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
     print(art)
 
-# STATUS TRACK
-status_step = 0  
-total_steps = 8  
-
-# STATUS 
+# STATUS GUI
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("HARD3N - System Hardening Progress")
-        self.root.geometry("550x350")
+        self.root.geometry("500x300")
         self.root.resizable(False, False)
 
-        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 14), wraplength=500)
-        self.label.pack(pady=10)
+        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 14), wraplength=480)
+        self.label.pack(pady=20)
 
-        self.progress = ttk.Progressbar(self.root, length=450, mode="determinate")  
-        self.progress.pack(pady=5)
-
-        self.log_window = tk.Text(self.root, height=8, width=60, state=tk.DISABLED)
-        self.log_window.pack(pady=5)
-
-        self.toggle_button = tk.Button(self.root, text="Show Logs", command=self.toggle_logs)
-        self.toggle_button.pack(pady=5)
+        self.progress = ttk.Progressbar(self.root, length=400, mode="determinate")
+        self.progress.pack(pady=10)
 
         self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
-        self.close_button.pack(pady=5)
+        self.close_button.pack(pady=10)
 
-        self.total_steps = total_steps
+        self.total_steps = 8
         self.current_step = 0
-        self.show_logs = False
 
     def update_status(self, message, progress=None):
         """Updates the GUI progress"""
@@ -87,19 +76,6 @@ class StatusGUI:
             progress_percent = int((self.current_step / self.total_steps) * 100)
             self.progress["value"] = progress_percent
         self.root.update_idletasks()
-
-    def add_log(self, message):
-        """Adds log output to the GUI log window"""
-        self.log_window.config(state=tk.NORMAL)
-        self.log_window.insert(tk.END, message + "\n")
-        self.log_window.config(state=tk.DISABLED)
-        self.log_window.see(tk.END)
-
-    def toggle_logs(self):
-        """Toggles between log view and progress bar"""
-        self.show_logs = not self.show_logs
-        self.log_window.pack_forget() if not self.show_logs else self.log_window.pack(pady=5)
-        self.toggle_button.config(text="Hide Logs" if self.show_logs else "Show Logs")
 
     def complete(self):
         """Marks completion of process"""
@@ -114,7 +90,45 @@ class StatusGUI:
 
 status_gui = StatusGUI()
 
-# GET DISK SIZE
+# CONFIGURE LOGGING
+LOG_DIR = os.path.expanduser("~/security_logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+DATE = datetime.now().strftime("%Y%m%d_%H%M%S")
+SCRIPT_LOG = os.path.join(LOG_DIR, f"script_execution_{DATE}.log")
+
+logging.basicConfig(
+    filename=SCRIPT_LOG,
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# LOGGING & COMMAND EXECUTION
+def log(message):
+    print(message)
+    logging.info(message)
+
+def exec_command(command, check=True):
+    """Executes shell commands with logging and error handling."""
+    try:
+        result = subprocess.run(command, shell=True, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        log(f"Command executed: {command}\nOutput: {result.stdout.strip()}")
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        log(f"Command failed: {command}\nError: {e.stderr.strip()}")
+        return None
+
+# INSTALL REQUIRED SECURITY TOOLS
+def install_missing_tools():
+    tools = ["podman", "firejail", "bubblewrap", "ufw", "fail2ban", "clamav", "lynis", "apparmor", "apparmor-utils"]
+    for tool in tools:
+        if shutil.which(tool) is None:
+            log(f"{tool} not found. Installing...")
+            exec_command(f"apt install -y {tool}")
+
+install_missing_tools()
+
+# DISK SCAN SIZE CALCULATION
 def get_total_scan_size(scan_dirs):
     """Calculates the total disk space used by the directories being scanned."""
     total_size = 0
@@ -124,84 +138,51 @@ def get_total_scan_size(scan_dirs):
             total_size += int(output)
         except (subprocess.CalledProcessError, IndexError, ValueError):
             log(f"Skipping {directory}: Unable to calculate size.")
-    
-    log(f"Total disk space to scan: {total_size / (1024**3):.2f} GB")  
-    status_gui.update_status(f"Total scan size: {total_size / (1024**3):.2f} GB")  
+
+    log(f"Total disk space to scan: {total_size / (1024**3):.2f} GB")
+    status_gui.update_status(f"Total scan size: {total_size / (1024**3):.2f} GB")
     return total_size
 
-# GUI LOG AND STAT
-def log(message):
-    """Handles logging for both console and GUI"""
-    print(message)
-    logging.info(message)
-    status_gui.add_log(message)
-    
-def exec_command(command, check=True, silent=False):
-    """Executes shell commands with logging and error handling.
-    
-    Args:
-        command (str): The shell command to execute.
-        check (bool): Whether to raise an error if the command fails.
-        silent (bool): If True, does not log stdout output unless there's an error.
-
-    Returns:
-        tuple: (stdout, stderr) from the command execution.
-    """
-    try:
-        result = subprocess.run(command, shell=True, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if not silent:
-            log(f"Command executed: {command}\nOutput: {result.stdout.strip()}")
-        return result.stdout.strip(), result.stderr.strip()
-    except subprocess.CalledProcessError as e:
-        error_message = e.stderr.strip() if e.stderr else "No error message provided."
-        log(f"Command failed: {command}\nError: {error_message}")
-        return None, error_message  # Returns error message for further handling
-
-def update_status(step_name):
-    """Updates both the console log and GUI with progress markers."""
-    global status_step
-    status_step += 1
-    message = f"[{status_step}/{total_steps}] {step_name}..."
-    
-    log(message)  
-    status_gui.update_status(message)  
-
-# CLAMAV SCANNING WITH ESTIMATED TIME
+# SECURITY AUDITS WITH LIVE UPDATES
 def run_audits():
+    """Runs ClamAV and Lynis security audits with progress tracking."""
     update_status("Running Security Audits")
+
+    log("Updating ClamAV database...")
     exec_command("freshclam")
 
     scan_dirs = ["/home", "/var/log", "/etc", "/usr/bin"]
     total_scan_size = get_total_scan_size(scan_dirs)
     scanned_size = 0
 
-    process = subprocess.Popen(
-        "clamscan -r /home --infected --max-filesize=100M --max-scansize=500M --log=/var/log/clamav_scan.log",
-        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-    )
-
-    start_time = time.time()
-    dots = ["Scanning...", "Scanning..", "Scanning."]
-
-    for index, line in enumerate(iter(process.stdout.readline, '')):
-        if "Scanned files" in line:
-            scanned_size += 100 * 1024 * 1024 
-            progress_percent = min(int((scanned_size / total_scan_size) * 100), 100)
-            elapsed_time = time.time() - start_time
-            estimated_time = (elapsed_time / (scanned_size + 1)) * (total_scan_size - scanned_size)
-            status_gui.update_status(f"{dots[index % 3]} {progress_percent}% complete - ETA: {int(estimated_time)}s", progress_percent)
+    log("Starting ClamAV scan...")
     
-    process.wait()
-    exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
+    for index, directory in enumerate(scan_dirs, start=1):
+        update_status(f"Scanning: {directory} ({index}/{len(scan_dirs)})")
+
+        process = subprocess.Popen(
+            f"clamscan -r {directory} --infected --max-filesize=100M --max-scansize=500M --log={LOG_DIR}/clamav_scan_{DATE}.log",
+            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+
+        for line in iter(process.stdout.readline, ''):
+            if "Scanned files" in line:
+                scanned_size += 100 * 1024 * 1024
+                progress_percent = min(int((scanned_size / total_scan_size) * 100), 100)
+                status_gui.update_status(f"Scanning: {progress_percent}% complete", progress_percent)
+
+        process.wait()
+        log(f"Completed scan for {directory}")
+
+    exec_command("lynis audit system --quick | tee {LOG_DIR}/lynis_audit_{DATE}.log")
     update_status("Security audits completed.")
 
-# START
+# MAIN FUNCTION
 def start_hardening():
     threading.Thread(target=lambda: [
-        run_audits()
+        run_audits(),
     ], daemon=True).start()
 
-# MAIN
 def main():
     print_ascii_art()
     status_gui.root.after(100, start_hardening)
