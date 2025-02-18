@@ -3,13 +3,34 @@ import subprocess
 import shutil
 import sys
 import signal
+import signal
+
+# EXIT
+def clean_exit(signum=None, frame=None):
+    """Gracefully exit the script, stopping background processes and closing the GUI."""
+    status_gui.update_status("Cleaning up and exiting...")
+    logging.info("HARDN exiting cleanly...")
+
+    # Stop any background processes (modify as needed)
+    try:
+        subprocess.run("pkill -f clamav", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run("pkill -f freshclam", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run("pkill -f lynis", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        logging.error(f"Error stopping processes: {e}")
+
+    # Close the GUI properly
+    status_gui.root.quit()
+    sys.exit(0)  # Exit script properly
+
 import time
 import logging
 import threading
+import getpass
 import tkinter as tk
 from tkinter import ttk  
 from datetime import datetime
-from hardn_tk import HardnGUI  
+# from hardn_tk import HardnGUI  
 
 # ROOT ENSURE
 def ensure_root():
@@ -79,7 +100,7 @@ class StatusGUI:
         self.text_area = tk.Text(self.root, height=15, width=70, state=tk.DISABLED)
         self.text_area.pack(pady=10)
 
-        self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
+        self.close_button = tk.Button(self.root, text="Close", command=clean_exit, state=tk.DISABLED)
         self.close_button.pack(pady=10)
 
         self.total_steps = 12
@@ -153,12 +174,12 @@ def setup_security_cron_jobs():
     for job in cron_jobs:
         exec_command(f"(crontab -l 2>/dev/null; echo \"{job}\") | crontab -")
 
-# RUN SECURITY AUDITS (ClamAV runs in the background)
+# RUN SECURITY AUDITS 
 def run_audits():
     status_gui.update_status("Running Security Audits...")
-    exec_command("freshclam &")  # Run in background
+    exec_command("freshclam &")  
     log_file = f"/var/log/clamav_scan_{DATE}.log"
-    exec_command(f"clamscan -r /home --infected --log={log_file} &")  # Run in background
+    exec_command(f"clamscan -r /home --infected --log={log_file} &")  
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
 
 # MAIN FUNCTION
@@ -174,8 +195,10 @@ def start_hardening():
 
 def main():
     print_ascii_art()
+    signal.signal(signal.SIGINT, clean_exit)  
     status_gui.root.after(100, start_hardening)
     status_gui.run()
+
 
 if __name__ == "__main__":
     main()
