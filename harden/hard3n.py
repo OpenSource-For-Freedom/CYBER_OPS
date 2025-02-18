@@ -1,5 +1,3 @@
-# its haning up on security audits, going to let it run and see where it goes. 
-
 import os
 import subprocess
 import shutil
@@ -42,7 +40,7 @@ def print_ascii_art():
                             Hardening and
                      System protection measures.
                          License: MIT License
-                            Version: 1.4.2
+                            Version: 1.4.5
                            Dev: Tim "TANK" Burns
       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
@@ -61,33 +59,22 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-def log(message):
-    print(message)
-    logging.info(message)
-
-# EXECUTE COMMAND SAFELY
-def exec_command(command):
-    try:
-        result = subprocess.run(command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        log(f"Command executed: {command}\nOutput: {result.stdout.strip()}")
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        log(f"Command failed: {command}\nError: {e.stderr.strip()}")
-        return None
-
 # STATUS GUI 
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("HARD3N - System Hardening Progress")
-        self.root.geometry("500x300")
+        self.root.geometry("600x400")
         self.root.resizable(False, False)
 
-        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 14), wraplength=480)
-        self.label.pack(pady=20)
+        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 12), wraplength=580)
+        self.label.pack(pady=10)
 
-        self.progress = ttk.Progressbar(self.root, length=400, mode="determinate")  
+        self.progress = ttk.Progressbar(self.root, length=500, mode="determinate")  
         self.progress.pack(pady=10)
+
+        self.text_area = tk.Text(self.root, height=15, width=70, state=tk.DISABLED)
+        self.text_area.pack(pady=10)
 
         self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
         self.close_button.pack(pady=10)
@@ -97,59 +84,64 @@ class StatusGUI:
 
     def update_status(self, message, progress=None):
         self.label.config(text=message)
+        self.text_area.config(state=tk.NORMAL)
+        self.text_area.insert(tk.END, message + "\n")
+        self.text_area.config(state=tk.DISABLED)
+        self.text_area.yview(tk.END)
+
         if progress is not None:
             self.progress["value"] = progress
         else:
             self.current_step += 1
             progress_percent = int((self.current_step / self.total_steps) * 100)
             self.progress["value"] = progress_percent
+
         self.root.update_idletasks()
 
     def complete(self):
-        self.label.config(text="System Hardening Complete!")
-        self.progress["value"] = 100
+        self.update_status("✅ System Hardening Complete!", 100)
         self.close_button.config(state=tk.NORMAL)
-        self.root.update_idletasks()
 
     def run(self):
         self.root.mainloop()
 
 status_gui = StatusGUI()
 
-# INSTALL SECURITY TOOLS IF MISSING
-def ensure_security_tools():
-    tools = ["ufw", "fail2ban", "clamav", "apparmor", "apparmor-utils", "bubblewrap"]
-    for tool in tools:
-        if shutil.which(tool) is None:
-            log(f"{tool} not found. Installing...")
-            status_gui.update_status(f"Installing {tool}...")
-            exec_command(f"DEBIAN_FRONTEND=noninteractive apt install -y {tool}")
+# EXECUTE COMMAND & LOG IN GUI
+def exec_command(command):
+    try:
+        result = subprocess.run(command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = result.stdout.strip()
+        status_gui.update_status(f"✅ {command}\n{output}\n")
+        return output
+    except subprocess.CalledProcessError as e:
+        status_gui.update_status(f"❌ {command}\nError: {e.stderr.strip()}\n")
+        return None
 
-# SYSTEM HARDENING FUNCTIONS
+# SYSTEM HARDENING
 def configure_firewall():
-    status_gui.update_status("Configuring Firewall")
+    status_gui.update_status("🔒 Configuring Firewall...")
     exec_command("ufw default deny incoming")
     exec_command("ufw default allow outgoing")
-    exec_command("ufw --force enable")  # Prevents user confirmation freeze
+    exec_command("ufw --force enable")
 
 def enforce_password_policies():
-    status_gui.update_status("Enforcing Password Policies")
+    status_gui.update_status("🔑 Enforcing Password Policies...")
     exec_command("chage -M 90 -m 7 -W 14 $(whoami)")
 
 def track_setgid_permissions():
-    status_gui.update_status("Tracking SetGID Permissions")
-    home_path = os.path.expanduser("~")
-    setgid_log = os.path.join(home_path, "setgid_permissions.txt")
-    exec_command(f"find / -mount -perm -2000 -type f -exec ls -ld {{}} \\; > {setgid_log}")
-    exec_command(f"chown $(whoami):$(whoami) {setgid_log}")
+    status_gui.update_status("🔎 Tracking SetGID Permissions...")
+    exec_command("find / -mount -perm -2000 -type f -exec ls -ld {} \\; > /root/setgid_permissions.txt")
+    exec_command("chown $(whoami):$(whoami) /root/setgid_permissions.txt")
 
 def enable_auto_updates():
-    status_gui.update_status("Enabling Automatic Security Updates")
+    status_gui.update_status("🔄 Enabling Automatic Security Updates...")
     exec_command("apt install -y unattended-upgrades")
-    exec_command("dpkg-reconfigure -plow unattended-upgrades")
+    exec_command('echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | sudo debconf-set-selections')
+    exec_command("dpkg-reconfigure -f noninteractive unattended-upgrades")
 
 def setup_security_cron_jobs():
-    status_gui.update_status("Setting up security automation")
+    status_gui.update_status("🕒 Setting up security automation...")
     cron_jobs = [
         "@daily apt update && apt upgrade -y",
         "@weekly lynis audit system >> /var/log/lynis_weekly.log",
@@ -158,15 +150,16 @@ def setup_security_cron_jobs():
     for job in cron_jobs:
         exec_command(f"(crontab -l 2>/dev/null; echo \"{job}\") | crontab -")
 
+# RUN SECURITY AUDITS (ClamAV runs in the background)
 def run_audits():
-    status_gui.update_status("Running Security Audits")
-    exec_command("freshclam")
-    exec_command("clamscan -r /home --infected --log=/var/log/clamav_scan.log &")  # Runs in background
+    status_gui.update_status("🔍 Running Security Audits...")
+    exec_command("freshclam &")  # Run in background
+    log_file = f"/var/log/clamav_scan_{DATE}.log"
+    exec_command(f"clamscan -r /home --infected --log={log_file} &")  # Run in background
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
 
 # MAIN FUNCTION
 def start_hardening():
-    ensure_security_tools()
     threading.Thread(target=lambda: [
         configure_firewall(),
         enforce_password_policies(),
