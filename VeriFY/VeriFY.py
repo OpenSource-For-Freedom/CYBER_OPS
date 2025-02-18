@@ -24,7 +24,7 @@ def print_ascii_art():
                  ░     ░  ░   ░      ░           ░ ░     
                 ░                                ░ ░     
 
-                "VeriFy" - The Netowrk Security Project
+                "VeriFy" - The Network Security Project
                 ----------------------------------------
                  A project focused on improving network
                 security by automating, containerizing
