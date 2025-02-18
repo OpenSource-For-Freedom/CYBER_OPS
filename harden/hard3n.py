@@ -99,7 +99,7 @@ class StatusGUI:
         self.root.update_idletasks()
 
     def complete(self):
-        self.update_status("✅ System Hardening Complete!", 100)
+        self.update_status("System Hardening Complete!", 100)
         self.close_button.config(state=tk.NORMAL)
 
     def run(self):
@@ -112,10 +112,10 @@ def exec_command(command):
     try:
         result = subprocess.run(command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output = result.stdout.strip()
-        status_gui.update_status(f"✅ {command}\n{output}\n")
+        status_gui.update_status(f"{command}\n{output}\n")
         return output
     except subprocess.CalledProcessError as e:
-        status_gui.update_status(f"❌ {command}\nError: {e.stderr.strip()}\n")
+        status_gui.update_status(f"{command}\nError: {e.stderr.strip()}\n")
         return None
 
 # SYSTEM HARDENING
@@ -126,22 +126,22 @@ def configure_firewall():
     exec_command("ufw --force enable")
 
 def enforce_password_policies():
-    status_gui.update_status("🔑 Enforcing Password Policies...")
+    status_gui.update_status("Enforcing Password Policies...")
     exec_command("chage -M 90 -m 7 -W 14 $(whoami)")
 
 def track_setgid_permissions():
-    status_gui.update_status("🔎 Tracking SetGID Permissions...")
+    status_gui.update_status("Tracking SetGID Permissions...")
     exec_command("find / -mount -perm -2000 -type f -exec ls -ld {} \\; > /root/setgid_permissions.txt")
     exec_command("chown $(whoami):$(whoami) /root/setgid_permissions.txt")
 
 def enable_auto_updates():
-    status_gui.update_status("🔄 Enabling Automatic Security Updates...")
+    status_gui.update_status("Enabling Automatic Security Updates...")
     exec_command("apt install -y unattended-upgrades")
     exec_command('echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | sudo debconf-set-selections')
     exec_command("dpkg-reconfigure -f noninteractive unattended-upgrades")
 
 def setup_security_cron_jobs():
-    status_gui.update_status("🕒 Setting up security automation...")
+    status_gui.update_status("Setting up security automation...")
     cron_jobs = [
         "@daily apt update && apt upgrade -y",
         "@weekly lynis audit system >> /var/log/lynis_weekly.log",
@@ -152,7 +152,7 @@ def setup_security_cron_jobs():
 
 # RUN SECURITY AUDITS (ClamAV runs in the background)
 def run_audits():
-    status_gui.update_status("🔍 Running Security Audits...")
+    status_gui.update_status("Running Security Audits...")
     exec_command("freshclam &")  # Run in background
     log_file = f"/var/log/clamav_scan_{DATE}.log"
     exec_command(f"clamscan -r /home --infected --log={log_file} &")  # Run in background
