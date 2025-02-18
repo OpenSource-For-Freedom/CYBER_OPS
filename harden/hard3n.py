@@ -135,6 +135,27 @@ def log(message):
     print(message)
     logging.info(message)
     status_gui.add_log(message)
+    
+def exec_command(command, check=True, silent=False):
+    """Executes shell commands with logging and error handling.
+    
+    Args:
+        command (str): The shell command to execute.
+        check (bool): Whether to raise an error if the command fails.
+        silent (bool): If True, does not log stdout output unless there's an error.
+
+    Returns:
+        tuple: (stdout, stderr) from the command execution.
+    """
+    try:
+        result = subprocess.run(command, shell=True, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if not silent:
+            log(f"Command executed: {command}\nOutput: {result.stdout.strip()}")
+        return result.stdout.strip(), result.stderr.strip()
+    except subprocess.CalledProcessError as e:
+        error_message = e.stderr.strip() if e.stderr else "No error message provided."
+        log(f"Command failed: {command}\nError: {error_message}")
+        return None, error_message  # Returns error message for further handling
 
 def update_status(step_name):
     """Updates both the console log and GUI with progress markers."""
