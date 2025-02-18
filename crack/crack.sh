@@ -1,5 +1,30 @@
 #!/bin/bash
 
+# PRINT BANNER
+def print_ascii_art():
+    art = """
+             ▄████▄   ██▀███   ▄▄▄       ▄████▄   ██ ▄█▀
+            ▒██▀ ▀█  ▓██ ▒ ██▒▒████▄    ▒██▀ ▀█   ██▄█▒ 
+            ▒▓█    ▄ ▓██ ░▄█ ▒▒██  ▀█▄  ▒▓█    ▄ ▓███▄░ 
+            ▒▓▓▄ ▄██▒▒██▀▀█▄  ░██▄▄▄▄██ ▒▓▓▄ ▄██▒▓██ █▄ 
+            ▒ ▓███▀ ░░██▓ ▒██▒ ▓█   ▓██▒▒ ▓███▀ ░▒██▒ █▄
+            ░ ░▒ ▒  ░░ ▒▓ ░▒▓░ ▒▒   ▓▒█░░ ░▒ ▒  ░▒ ▒▒ ▓▒
+              ░  ▒     ░▒ ░ ▒░  ▒   ▒▒ ░  ░  ▒   ░ ░▒ ▒░
+               ░          ░░   ░   ░   ▒   ░        ░ ░░ ░ 
+               ░ ░         ░           ░  ░░ ░      ░  ░   
+               ░                           ░               
+                "CRACK" - The Linux Security Project
+                ----------------------------------------
+                 A project focused on improving Linux
+                security by automating, containerizing
+                            Hardening and
+                     System protection measures.
+                         License: MIT License
+                            Version: 1.2.0
+                           Dev: Tim "TANK" Burns
+      GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
+    """
+    print(art)
 # Ask for the SSID
 read -p "Enter the SSID of the network you have permission to test: " SSID
 
