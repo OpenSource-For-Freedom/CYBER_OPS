@@ -123,7 +123,7 @@ def exec_command(command):
 
 # SYSTEM HARDENING
 def configure_firewall():
-    status_gui.update_status("🔒 Configuring Firewall...")
+    status_gui.update_status("Configuring Firewall...")
     exec_command("ufw default deny incoming")
     exec_command("ufw default allow outgoing")
     exec_command("ufw --force enable")
