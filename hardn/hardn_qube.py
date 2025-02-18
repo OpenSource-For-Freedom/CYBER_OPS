@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# hard3n_qubes.py the Debian OS complete Lockdown tool for local and routing needs. 
+# hardn_qubes.py the Debian OS complete Lockdown tool for local and routing needs. 
 import os
 import subprocess
 import sys
