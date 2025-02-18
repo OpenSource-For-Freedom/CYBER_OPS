@@ -40,7 +40,7 @@ def print_ascii_art():
                             Hardening and
                      System protection measures.
                          License: MIT License
-                            Version: 1.3.7
+                            Version: 1.4.0
                            Dev: Tim "TANK" Burns
       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
@@ -60,7 +60,6 @@ logging.basicConfig(
 )
 
 def log(message):
-    """Handles logging for both console and log file"""
     print(message)
     logging.info(message)
 
@@ -81,11 +80,10 @@ class StatusGUI:
         self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
         self.close_button.pack(pady=10)
 
-        self.total_steps = 8
+        self.total_steps = 12
         self.current_step = 0
 
     def update_status(self, message, progress=None):
-        """Updates the GUI progress"""
         self.label.config(text=message)
         if progress is not None:
             self.progress["value"] = progress
@@ -96,95 +94,99 @@ class StatusGUI:
         self.root.update_idletasks()
 
     def complete(self):
-        """Marks completion of process"""
         self.label.config(text="System Hardening Complete!")
         self.progress["value"] = 100
         self.close_button.config(state=tk.NORMAL)
         self.root.update_idletasks()
 
     def run(self):
-        """Runs the GUI"""
         self.root.mainloop()
 
 status_gui = StatusGUI()
 
-# EXECUTE SHELL COMMANDS
-def exec_command(command, check=True):
-    """Executes shell commands with logging and error handling."""
-    try:
-        result = subprocess.run(command, shell=True, check=check, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        log(f"Command executed: {command}\nOutput: {result.stdout.strip()}")
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        log(f"Command failed: {command}\nError: {e.stderr.strip()}")
-        return None
+# SYSTEM HARDENING FUNCTIONS
 
-# INSTALL MISSING SECURITY TOOLS
 def ensure_security_tools():
-    """Ensures necessary security tools are installed"""
     tools = ["ufw", "fail2ban", "clamav", "apparmor", "apparmor-utils", "bubblewrap"]
     for tool in tools:
         if shutil.which(tool) is None:
             log(f"{tool} not found. Installing...")
             exec_command(f"apt install -y {tool}")
 
-# CONFIGURE UFW WITHOUT BREAKING INTERNET
 def configure_firewall():
-    """Configures UFW to block inbound while allowing outbound traffic"""
     update_status("Configuring Firewall")
     exec_command("ufw default deny incoming")
-    exec_command("ufw default allow outgoing")  
+    exec_command("ufw default allow outgoing")
     exec_command("ufw enable")
-    log("Firewall configured to block inbound and allow outbound connections.")
 
-# GET TOTAL SCAN SIZE
-def get_total_scan_size(scan_dirs):
-    """Calculates total disk space being scanned."""
-    total_size = 0
-    for directory in scan_dirs:
-        try:
-            output = subprocess.check_output(f"du -sb {directory} 2>/dev/null", shell=True, text=True).split()[0]
-            total_size += int(output)
-        except (subprocess.CalledProcessError, IndexError, ValueError):
-            log(f"Skipping {directory}: Unable to calculate size.")
+def enforce_password_policies():
+    update_status("Enforcing Password Policies")
+    exec_command("chage -M 90 -m 7 -W 14 $(whoami)")
+
+def restrict_sudo_access():
+    update_status("Restricting Sudo Access")
+    exec_command("echo '$(whoami) ALL=(ALL) ALL, !/bin/su, !/usr/bin/passwd' | sudo tee -a /etc/sudoers")
+
+def harden_grub():
+    update_status("Hardening GRUB Security")
+    exec_command("echo 'GRUB_CMDLINE_LINUX_DEFAULT=\"quiet splash apparmor=1 security=apparmor\"' | sudo tee -a /etc/default/grub")
+    exec_command("update-grub")
+
+def harden_network():
+    update_status("Applying Network Hardening")
+    exec_command("echo 'net.ipv4.conf.all.rp_filter = 1' | sudo tee -a /etc/sysctl.conf")
+    exec_command("sysctl -p")
+
+def track_setgid_permissions():
+    update_status("Tracking SetGID Permissions")
+    exec_command("find / -mount -perm -2000 -type f -exec ls -ld {} \\; > /home/user/setgid_.txt")
+    exec_command("chown user:user /home/user/setgid_.txt")
+
+def setup_audit_logs():
+    update_status("Enabling Security Audit Logs")
+    exec_command("auditctl -e 1")
+
+def enable_auto_updates():
+    """Enables unattended security updates."""
+    update_status("Enabling Automatic Security Updates")
+    exec_command("apt install -y unattended-upgrades")
+    exec_command("dpkg-reconfigure -plow unattended-upgrades")
+
+def setup_security_cron_jobs():
+    """Creates cron jobs for regular security maintenance."""
+    update_status("Setting up security automation")
     
-    log(f"Total disk space to scan: {total_size / (1024**3):.2f} GB")  
-    status_gui.update_status(f"Total scan size: {total_size / (1024**3):.2f} GB")  
-    return total_size
+    cron_jobs = [
+        "@daily apt update && apt upgrade -y",
+        "@weekly lynis audit system >> /var/log/lynis_weekly.log",
+        "@weekly find / -perm -2000 -type f -exec ls -ld {} \\; > /home/user/setgid_.txt"
+    ]
 
-# RUN SECURITY AUDITS
+    for job in cron_jobs:
+        exec_command(f"(crontab -l 2>/dev/null; echo \"{job}\") | crontab -")
+
 def run_audits():
     update_status("Running Security Audits")
     exec_command("freshclam")
-
-    scan_dirs = ["/home", "/var/log", "/etc", "/usr/bin"]
-    total_scan_size = get_total_scan_size(scan_dirs)
-    scanned_size = 0
-
-    process = subprocess.Popen(
-        "clamscan -r /home --infected --max-filesize=100M --max-scansize=500M --log=/var/log/clamav_scan.log",
-        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-    )
-
-    for line in iter(process.stdout.readline, ''):
-        if "Scanned files" in line:
-            scanned_size += 100 * 1024 * 1024 
-            progress_percent = min(int((scanned_size / total_scan_size) * 100), 100)
-            update_status(f"Scanning: {progress_percent}% complete", progress_percent)
-    
-    process.wait()
+    exec_command("clamscan -r /home --infected --log=/var/log/clamav_scan.log")
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
-    update_status("Security audits completed.")
 
-# START HARDENING
+# MAIN FUNCTION
 def start_hardening():
     ensure_security_tools()
     threading.Thread(target=lambda: [
         configure_firewall(),
+        enforce_password_policies(),
+        restrict_sudo_access(),
+        harden_grub(),
+        harden_network(),
+        track_setgid_permissions(),
+        setup_audit_logs(),
+        enable_auto_updates(),
+        setup_security_cron_jobs(),
         run_audits()
     ], daemon=True).start()
 
-# MAIN
 def main():
     print_ascii_art()
     status_gui.root.after(100, start_hardening)
