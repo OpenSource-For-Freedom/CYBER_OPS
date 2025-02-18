@@ -1,23 +1,23 @@
-# HARD3N System
+# HARDN System
 [Images/github-header-image.png]
 
 ## Mission
-HARD3N is a security toolkit designed to enhance system protection through a combination of lockdown measures, network anonymization via Tor, and file security features. Its goal is to make your system more secure, anonymous, and resistant to threats.
+HARDN is a security toolkit designed to enhance system protection through a combination of lockdown measures, network anonymization via Tor, and file security features. Its goal is to make your system more secure, anonymous, and resistant to threats.
 
 ---
 
 ## Files Overview
 
-### `hard3n.py`
-The core script of the HARD3N system. It coordinates between the modules and acts as the main entry point for system lockdown and security operations.
+### `hardn.py`
+The core script of the HARDN system. It coordinates between the modules and acts as the main entry point for system lockdown and security operations.
 
-### `hard3n_tk.py`
-A Tkinter-based GUI that allows users to interact with the system and choose between different security features like **Hard3n Qubes** and **Dark Files**.
+### `hardn_tk.py`
+A Tkinter-based GUI that allows users to interact with the system and choose between different security features like **Hardn Qubes** and **Dark Files**.
 
-### `hard3n_dark.py`
+### `hardn_dark.py`
 The file security module (planned). It will handle encrypted storage and secure access for critical files.
 
-### `hard3n_qubes.py`
+### `hardn_qubes.py`
 Handles the core lockdown process, including:
 - Routing network traffic through Tor.
 - Containerizing browser activity with Firejail.
@@ -40,10 +40,10 @@ Handles the core lockdown process, including:
   
   ## How It Works
 
-- **hard3n.py**: Runs the main functionality, initiating security processes based on user input.
-- **hard3n_tk.py**: GUI interface for selecting between available options and executing security actions.
-- **hard3n_dark.py**: (Coming soon) Handles file security features like encryption.
-- **hard3n_qubes.py**: Enforces strict network lockdown, routes all traffic through Tor, and uses Firejail for browser containerization.
+- **hardn.py**: Runs the main functionality, initiating security processes based on user input.
+- **hardn_tk.py**: GUI interface for selecting between available options and executing security actions.
+- **hardn_dark.py**: (Coming soon) Handles file security features like encryption.
+- **hardn_qubes.py**: Enforces strict network lockdown, routes all traffic through Tor and verifies browser control for downloads. 
 
 ---
 
