@@ -1,6 +1,6 @@
 
 <p align="center">
-    <img src="Images/github-header-image.png">
+    <img src="Images/octocat-1736601186918.png">
 </p>
 
 ##                                       ***Developer: Tim Burns***
