@@ -4,6 +4,7 @@ import shutil
 import sys
 import signal
 import time
+import shlex
 import logging
 import threading
 import getpass
@@ -49,6 +50,7 @@ def print_ascii_art():
     """
     print(art)
 
+
 # LOGGING SETUP
 LOG_DIR = os.path.expanduser("~/security_logs")
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -66,14 +68,14 @@ logging.basicConfig(
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("HARDN - System Hardening Progress")
-        self.root.geometry("700x500")
+        self.root.title("System Hardening Progress")
+        self.root.geometry("800x500")
         self.root.resizable(False, False)
 
-        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 12), wraplength=680)
+        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 14), wraplength=780)
         self.label.pack(pady=10)
 
-        self.progress = ttk.Progressbar(self.root, length=600, mode="determinate")  
+        self.progress = ttk.Progressbar(self.root, length=700, mode="determinate")  
         self.progress.pack(pady=10)
 
         self.text_area = tk.Text(self.root, height=20, width=90, state=tk.DISABLED)
@@ -110,64 +112,100 @@ class StatusGUI:
 
 status_gui = StatusGUI()
 
-# SECURITY CONFIG
-def configure_firewall():
-    status_gui.update_status("Configuring Firewall...")
-    exec_command("ufw default deny incoming")
-    exec_command("ufw default allow outgoing")
-    exec_command("ufw --force enable")
+# EXECUTE COMMAND & LOG IN GUI
+def exec_command(command):
+    try:
+        result = subprocess.run(shlex.split(command), check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = result.stdout.strip()
+        status_gui.update_status(f"{command}\n{output}\n")
+        return output
+    except subprocess.CalledProcessError as e:
+        status_gui.update_status(f"{command}\nError: {e.stderr.strip()}\n")
+        return None
 
-def configure_kernel_security():
-    status_gui.update_status("Configuring Kernel Security Settings...")
-    exec_command("update-grub")
+# REMOVE CLAMAV
+def remove_clamav():
+    status_gui.update_status("Removing ClamAV...")
+    exec_command("apt remove --purge -y clamav clamav-daemon")
+    exec_command("rm -rf /var/lib/clamav")
 
+# INSTALL ESET NOD32
+def install_eset_nod32():
+    status_gui.update_status("Installing ESET NOD32 Antivirus...")
+    exec_command("wget -q https://download.eset.com/com/eset/apps/home/av/linux/latest/eset_nod32av_64bit.deb -O /tmp/eset.deb")
+    exec_command("dpkg -i /tmp/eset.deb || apt --fix-broken install -y")
+    exec_command("rm -f /tmp/eset.deb")
+
+# ENSURE AUTO-UPDATES FOR ESET
+def setup_auto_updates():
+    status_gui.update_status("Setting up ESET NOD32 Auto-Update in Cron...")
+    eset_update_command = "/opt/eset/esets/sbin/esets_update"
+    if os.path.exists(eset_update_command):
+        exec_command(f"(crontab -l 2>/dev/null; echo '0 3 * * * {eset_update_command}') | crontab -")
+        status_gui.update_status("ESET Auto-Update Scheduled!")
+    else:
+        status_gui.update_status("Error: ESET Update Command Not Found.")
+
+# CONFIGURE FAIL2BAN
 def configure_fail2ban():
     status_gui.update_status("Configuring Fail2Ban...")
     exec_command("apt install -y fail2ban")
     exec_command("systemctl restart fail2ban")
     exec_command("systemctl enable fail2ban")
 
-def install_sophos():
-    status_gui.update_status("Installing Sophos Antivirus...")
-    exec_command("wget -qO- https://downloads.sophos.com/linux/sav-linux-free.tgz | tar -xz")
-    exec_command("cd sophos-av && sudo ./install.sh")
+# CONFIGURE GRUB SECURITY SETTINGS
+def configure_grub():
+    status_gui.update_status("Configuring GRUB Security Settings...")
+    grub_settings = """
+    GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT lsm=apparmor,landlock,lockdown,yama,integrity,bpf apparmor=1 security=apparmor"
+    """
+    with open("/etc/default/grub", "a") as grub_file:
+        grub_file.write(grub_settings + "\n")
+    exec_command("update-grub")
 
-def update_sophos():
-    status_gui.update_status("Updating Sophos Antivirus...")
-    exec_command("/opt/sophos-av/bin/savupdate")
-
-def setup_sophos_cron():
-    status_gui.update_status("Setting up Sophos Auto-Update in Cron...")
-    cron_job = "0 3 * * * /opt/sophos-av/bin/savupdate"  
-    exec_command(f'(crontab -l 2>/dev/null; echo "{cron_job}") | crontab -')
+# CONFIGURE FIREWALL
+def configure_firewall():
+    status_gui.update_status("Configuring Firewall...")
+    exec_command("ufw default deny incoming")
+    exec_command("ufw default allow outgoing")
+    exec_command("ufw allow 80,443/tcp")
+    exec_command("ufw allow out 80,443/tcp")
+    exec_command("ufw --force enable")
 
 # RUN SECURITY AUDITS
 def run_audits():
-    status_gui.update_status("Running Security Audits with Sophos...")
+    status_gui.update_status("Running Security Audits...")
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
-    
-    def run_sophos_scan():
-        status_gui.update_status("Scanning system with Sophos Antivirus...")
-        exec_command("/opt/sophos-av/bin/savscan /home")
-        status_gui.update_status("Security Audits Completed!", 100)
+    status_gui.update_status("Scanning system with ESET NOD32...")
+    exec_command("/opt/eset/esets/sbin/esets_scan /home")
+    status_gui.update_status("Security Audits Completed!")
 
-    threading.Thread(target=run_sophos_scan, daemon=True).start()
+# USB DEVICE LOCKDOWN
+def disable_usb():
+    status_gui.update_status("Locking down USB devices...")
+    exec_command("echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf")
+    exec_command("modprobe -r usb-storage")
 
+# SOFTWARE INTEGRITY CHECK
+def software_integrity_check():
+    status_gui.update_status("Checking software integrity...")
+    exec_command("debsums -s")
+
+# MAIN FUNCTION
 def start_hardening():
-    def run_hardening():
-        configure_firewall()
-        configure_kernel_security()
-        configure_fail2ban()
-        install_sophos()
-        update_sophos()
-        setup_sophos_cron()
+    threading.Thread(target=lambda: [
+        remove_clamav(),
+        install_eset_nod32(),
+        setup_auto_updates(),
+        configure_fail2ban(),
+        configure_grub(),
+        configure_firewall(),
+        disable_usb(),
+        software_integrity_check(),
         run_audits()
-        status_gui.complete()
-
-    threading.Thread(target=run_hardening, daemon=True).start()
+    ], daemon=True).start()
 
 def main():
-    print_ascii_art()
     status_gui.root.after(100, start_hardening)
     status_gui.run()
 
