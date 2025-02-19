@@ -12,7 +12,7 @@ HARDN is a security toolkit designed to enhance system protection through a comb
 The core script of the HARDN system. It coordinates between the modules and acts as the main entry point for system lockdown and security operations.
 
 ### `hardn_tk.py`
-A Tkinter-based GUI that allows users to interact with the system and choose between different security features like **Hardn Qubes** and **Dark Files**.
+A Tkinter-based GUI that allows users to interact with the system and choose between different security features like **Hardn Qubes** and **Dark Files** as well as layered **HARDN** settings that they may need or not need. 
 
 ### `hardn_dark.py`
 The file security module (planned). It will handle encrypted storage and secure access for critical files.
@@ -37,7 +37,7 @@ Handles the core lockdown process, including:
   sudo apt update
   sudo apt install -y python3 python3-pip tor firejail
   pip3 install pillow
-  
+  ```
   ## How It Works
 
 - **hardn.py**: Runs the main functionality, initiating security processes based on user input.
