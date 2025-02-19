@@ -184,8 +184,44 @@ def configure_kernel_security():
     exec_command("update-grub")
     status_gui.update_status("Kernel Security Configurations Applied. A Reboot is Required.")
 
+# SSH BRUTE FORCE BLOCKING: FAIL2BAN
+def configure_fail2ban():
+    """Configures Fail2Ban to protect against brute-force attacks."""
+    status_gui.update_status("Configuring Fail2Ban...")
 
+    # Install Fail2Ban if missing
+    fail2ban_installed = exec_command("dpkg -l | grep fail2ban")
+    if not fail2ban_installed:
+        status_gui.update_status("Fail2Ban not found. Installing now...")
+        exec_command("apt install -y fail2ban")
 
+    # Create jail.local file for monitoring 
+    fail2ban_config = """
+    [DEFAULT]
+    bantime = 1h
+    findtime = 10m
+    maxretry = 3
+    destemail = root@localhost
+    sender = fail2ban@localhost
+    action = %(action_mwl)s
+
+    [sshd]
+    enabled = true
+    port = ssh
+    filter = sshd
+    logpath = /var/log/auth.log
+    maxretry = 3
+    bantime = 2h
+    """
+
+    with open("/etc/fail2ban/jail.local", "w") as jail_file:
+        jail_file.write(fail2ban_config)
+
+    # Restart Fail2Ban*
+    exec_command("systemctl restart fail2ban")
+    exec_command("systemctl enable fail2ban")
+
+    status_gui.update_status("Fail2Ban Configured and Running!")
 def enforce_password_policies():
     status_gui.update_status("Enforcing Password Policies...")
     exec_command("chage -M 90 -m 7 -W 14 $(whoami)")
@@ -282,6 +318,7 @@ def start_hardening():
         enable_auto_updates()
         setup_security_cron_jobs()
         configure_kernel_security() # GRUB SHOULD BE FIRST
+        configure_fail2ban()
         run_audits()  
 
         status_gui.complete()  
