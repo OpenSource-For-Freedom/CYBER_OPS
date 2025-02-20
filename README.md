@@ -37,6 +37,9 @@ By following these guidelines, you will enhance system security, maintain stabil
 
 ---
 
+# HARDN 
+## The Primary Focus prior to testing Exterior Attacks
+
 ## **Pre-Release Activities & Research**
 
 ### **System Hardening Research**
