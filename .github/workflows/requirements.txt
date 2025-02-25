@@ -1,0 +1,10 @@
+numpy
+scipy
+pandas
+requests
+psutil
+pyyaml
+lynis
+debsums
+fail2ban
+tk
