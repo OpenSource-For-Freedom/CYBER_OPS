@@ -162,12 +162,12 @@ CRON jobs: Automate updates and system security monitoring.
 ### System Hardening Tools
 
 Tool,Description
-Lynis,Security auditing tool for Unix-based systems.
-Fail2Ban,Protects against brute-force attacks.
-UFW,Easy-to-configure firewall utility.
-AppArmor,Mandatory Access Control (MAC) for enforcing policies.
-ClamAV,Open-source antivirus software.
-Firejail,Sandboxing tool for application isolation.
+- Lynis,Security auditing tool for Unix-based systems.
+- Fail2Ban,Protects against brute-force attacks.
+- UFW,Easy-to-configure firewall utility.
+- AppArmor,Mandatory Access Control (MAC) for enforcing policies.
+- ClamAV,(or our own tool) Open-source antivirus software.
+- Firejail,Sandboxing tool for application isolation.
 
 ### Takeaways and Next Steps
 
