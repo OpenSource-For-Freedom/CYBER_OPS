@@ -37,7 +37,7 @@ By following these guidelines, you will enhance system security, maintain stabil
 
 ---
 
-# HARDN "The first Takeoff 🚀
+# HARDN "The first Takeoff 
 ## The Primary Focus prior to testing Exterior Attacks
 
 ## **Pre-Release Activities & Research**
