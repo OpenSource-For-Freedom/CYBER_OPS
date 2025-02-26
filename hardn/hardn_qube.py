@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# need to add MAC rotating function before connecting to tor 
 # HARDN_QUBE - The Debian OS Lockdown Tool using UFW Firewall
 import os
 import subprocess
