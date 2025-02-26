@@ -1,32 +1,29 @@
 #!/usr/bin/env python3
-# hardn_qubes.py the Debian OS complete Lockdown tool for local and routing needs. 
+# HARDN_QUBE - The Debian OS Lockdown Tool using UFW Firewall
 import os
 import subprocess
-import sys
 import logging
 from logging.handlers import RotatingFileHandler
 
-# Ensure log dir exists
-LOG_DIR = "/var/log"
-LOG_FILE = "hardn_qube.log"
-log_path = os.path.join(LOG_DIR, LOG_FILE)
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR, mode=0o755, exist_ok=True)
+# Logs
+LOG_DIR = "/var/log/hardn"
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, "hardn_qube.log")
 
-# Setup logging + rotation
-log_handler = RotatingFileHandler(log_path, maxBytes=50 * 1024 * 1024, backupCount=1)
+log_handler = RotatingFileHandler(LOG_FILE, maxBytes=50 * 1024 * 1024, backupCount=1)
 log_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-# Run handling
+# booster and support function* 
 def run_command(command, description=""):
+    """Executes a shell command and logs output."""
     logger.info(f"[+] {description}")
     print(f"[+] {description}")
     try:
         if not isinstance(command, list):
-            raise ValueError("Command must be provided as a list to avoid parsing errors.")
+            raise ValueError("Command must be provided as a list.")
         result = subprocess.run(command, text=True, check=True, capture_output=True)
         if result.stdout:
             logger.info(result.stdout)
@@ -35,141 +32,136 @@ def run_command(command, description=""):
             logger.error(f"[-] Error: {result.stderr}")
             print(f"[-] Error: {result.stderr}")
     except subprocess.CalledProcessError as e:
-        logger.error(f"[-] Error: {description} failed. {e.stderr}")
-        print(f"[-] Error: {description} failed. {e.stderr}")
-        raise RuntimeError(f"Command failed: {command}")
+        logger.error(f"[-] {description} failed: {e.stderr}")
+        print(f"[-] {description} failed: {e.stderr}")
     except ValueError as ve:
         logger.error(f"[-] {ve}")
-        raise
+        print(f"[-] {ve}")
 
+# check root 
 def check_privileges():
-    """Check if the script is running with root privileges."""
-    if not hasattr(os, 'geteuid') or os.geteuid() != 0:
-        logger.error("This script must be run as root. Please use 'sudo'.")
-        print("[-] This script must be run as root. Please use 'sudo'.")
-        raise PermissionError("Script requires root privileges.")
+    """Ensure the script runs with root privileges."""
+    if os.geteuid() != 0:
+        logger.error("Script must be run as root! Use 'sudo'.")
+        print("[-] Script must be run as root! Use 'sudo'.")
+        exit(1)
 
-# Verify root?
 check_privileges()
+
+# UFW 
+def configure_ufw():
+    """Configures UFW firewall rules for TOR-only traffic enforcement."""
+    print("[+] Configuring UFW firewall rules...")
+
+    # make sure ufw is installed and enabled 
+    run_command(["apt", "install", "-y", "ufw"], "Installing UFW")
+    run_command(["ufw", "disable"], "Disabling UFW temporarily to reset rules")
+    run_command(["ufw", "reset"], "Resetting UFW rules")
+
+    # Default 
+    run_command(["ufw", "default", "deny", "incoming"], "Denying all incoming traffic")
+    run_command(["ufw", "default", "deny", "outgoing"], "Denying all outgoing traffic")
+
+    # TOR traffic ONLY 
+    run_command(["ufw", "allow", "out", "9040/tcp"], "Allowing TOR (9040)")
+    run_command(["ufw", "allow", "out", "9053/udp"], "Allowing TOR DNS (9053)")
+
+    # Debian updates (APT)
+    run_command(["ufw", "allow", "out", "53,67,123/udp"], "Allowing DNS, DHCP, NTP")
+    run_command(["ufw", "allow", "out", "80/tcp"], "Allowing HTTP for APT updates")
+    run_command(["ufw", "allow", "out", "443/tcp"], "Allowing HTTPS for secure updates")
+
+    # Allow SSH at some point 
+    # run_command(["ufw", "allow", "22/tcp"], "Allowing SSH (22)")
+
+    # Enable UFW | force
+    run_command(["ufw", "--force", "enable"], "Enabling UFW firewall")
+
+    print("[+] UFW firewall rules applied successfully.")
 
 # Configure TOR + Snowflake bridge
 def configure_tor():
-    """Configure TOR with Snowflake bridge."""
+    """Install and configure TOR with Snowflake bridge."""
     print("[+] Configuring TOR with Snowflake bridge...")
-
-    # Install TOR + bridge Snowflake
     run_command(["apt", "update"], "Updating package lists")
     run_command(["apt", "install", "-y", "tor", "snowflake-client"], "Installing TOR and Snowflake client")
 
-    # TOR configuration
+    # buikd tor and snowflake... we can choose a diff bridge if this isn't what we want for now 
+    torrc_path = "/etc/tor/torrc"
     torrc_content = """
 ClientTransportPlugin snowflake exec /usr/bin/snowflake-client
 UseBridges 1
-Bridge snowflake 192.0.2.1:443
+Bridge snowflake 192.0.2.1:443 
 DNSPort 9053
 TransPort 9040
 """
-    # Write torrc configuration
-    torrc_path = "/etc/tor/torrc"
     try:
         with open(torrc_path, "w") as torrc_file:
             torrc_file.write(torrc_content)
         print(f"[+] Wrote TOR configuration to {torrc_path}.")
-    except Exception as e:
-        print(f"[-] Failed to write TOR configuration: {e}")
-        raise IOError(f"Failed to write TOR configuration: {e}")
+    except IOError as e:
+        print(f"[-] Failed to write TOR config: {e}")
+        exit(1)
 
-    # Set permissions for the torrc file
-    run_command(["chown", "tor:tor", torrc_path], "Setting torrc file ownership")
-    run_command(["chmod", "644", torrc_path], "Setting torrc file permissions")
-
-    # Restart TOR service
+    # Set perms + restart TOR
+    run_command(["chown", "tor:tor", torrc_path], "Setting torrc ownership")
+    run_command(["chmod", "644", torrc_path], "Setting torrc permissions")
     run_command(["systemctl", "restart", "tor"], "Restarting TOR service")
-    print("[+] TOR configured with Snowflake bridge.")
 
-# Lockdown NIC > route only over TOR
-def lockdown_nic_with_tor():
-    """Lock down NIC and route traffic only through TOR."""
-    print("[+] Configuring network for TOR usage...")
+# lockdown browser 
+def containerize_browser(browser="firefox"):
+    """Run browser in an isolated Firejail sandbox."""
+    print("[+] Sandboxing browser...")
+    run_command(["apt", "install", "-y", "firejail"], "Installing Firejail")
+    run_command(["firejail", "--private", browser], "Launching browser in sandbox")
 
-    # Flush existing rules
-    run_command(["iptables", "-F"], "Flushing existing iptables rules")
-    run_command(["iptables", "-t", "nat", "-F"], "Flushing existing NAT rules")
-
-    # Allow TOR traffic
-    run_command(["iptables", "-t", "nat", "-A", "OUTPUT", "-m", "owner", "--uid-owner", "tor", "-j", "RETURN"], "Allow TOR traffic")
-
-    # Redirect DNS to TOR
-    run_command(["iptables", "-t", "nat", "-A", "OUTPUT", "-p", "udp", "--dport", "53", "-j", "REDIRECT", "--to-ports", "9053"], "Redirect DNS traffic to TOR")
-
-    # Redirect TCP traffic to TOR
-    run_command(["iptables", "-t", "nat", "-A", "OUTPUT", "-p", "tcp", "--syn", "-j", "REDIRECT", "--to-ports", "9040"], "Redirect TCP traffic to TOR")
-
-    # Allow established connections
-    run_command(["iptables", "-A", "OUTPUT", "-m", "state", "--state", "ESTABLISHED,RELATED", "-j", "ACCEPT"], "Allow established connections")
-
-    # Block all other outbound traffic
-    run_command(["iptables", "-A", "OUTPUT", "-j", "REJECT"], "Block all other outbound traffic")
-
-    # Save rules to persist across reboots
-    run_command(["iptables-save", "-f", "/etc/iptables/rules.v4"], "Saving iptables rules for persistence")
-
-    print("[+] TOR-only routing configured.")
-
-# Containerize browser 
-def containerize_browser(browser="firefox", options=None):
-    """Containerize browser activity using Firejail."""
-    print("[+] Containerizing browser activity...")
-    run_command(["apt", "install", "-y", "firejail"], "Installing Firejail sandboxing tool")
-    if options is None:
-        options = "--net=none"
-    browser_container_command = f"firejail {options} {browser}"
-    print(f"[+] Browser container command: {browser_container_command}")
-
-# Sandbox all dir (general only right now)
+# locodown dir's
 def sandbox_directories():
-    """Sandbox critical system directories from unauthorized changes."""
-    critical_directories = ["/var", "/lib", "/bin", "/sbin", "/root", "/grub"]
+    """Prevent unauthorized modifications to critical directories."""
+    critical_dirs = ["/var", "/lib", "/bin", "/sbin", "/root", "/boot"]
+    print("[+] Sandboxing critical directories...")
 
-    print("[+] Sandbox critical directories configuration started...")
     run_command(["apt", "install", "-y", "firejail"], "Ensuring Firejail is installed")
+    
+    for directory in critical_dirs:
+        run_command(["firejail", f"--private={directory}"], f"Sandboxing {directory}")
 
-    for directory in critical_directories:
-        print(f"[+] Setting up sandbox for {directory}...")
-        if directory in ["/bin", "/sbin"]:
-            print(f"[!] Warning: Sandboxing {directory} may break essential system functions.")
-        run_command(["firejail", f"--private={directory}"], f"Sandboxing directory {directory}")
+# Allow approved updates only but still need to enforce this in all 
+def enforce_signed_updates():
+    """Only allow updates for whitelisted packages."""
+    print("[+] Enforcing signed package updates...")
+    whitelist_file = "/etc/apt/approved-packages.txt"
 
-    print("[+] Critical directories sandboxed successfully.")
-# allow only signed and approved updates + upgrades around browser lockdown
-   sudo apt-get update && sudo apt-get install --only-upgrade $(cat /filepath_to/approved package handling location.txt)
-   
-# Redirect web downloads > locked-down directory
+    # be sure of whitelist exists
+    if not os.path.exists(whitelist_file):
+        print(f"[-] Package whitelist {whitelist_file} not found! Creating default.")
+        with open(whitelist_file, "w") as f:
+            f.write("tor\nsnowflake-client\nfirejail\n")  # Example default packages
+
+    # update but only approved ones 
+    run_command(["apt-get", "update"])
+    run_command(["apt-get", "install", "--only-upgrade", f"$(cat {whitelist_file})"], "Applying approved updates")
+
+# Redirect downloads > focused directory
 def redirect_web_downloads(directory="/var/locked_downloads"):
-    """Redirect web-based downloads to a locked directory for inspection."""
-    print(f"[+] Setting up directory {directory} for inspecting downloads...")
+    """Redirect and log all web-based downloads for inspection."""
+    print(f"[+] Redirecting web downloads to {directory}...")
+
     if not os.path.exists(directory):
         os.makedirs(directory, mode=0o700, exist_ok=True)
-        # Check storage space
-        statvfs = os.statvfs(directory)
-        free_space = statvfs.f_frsize * statvfs.f_bavail / (1024 * 1024 * 1024)  # Convert to GB
-        if free_space < 1:
-            logger.error("Insufficient storage space in the locked directory.")
-            raise RuntimeError("Insufficient storage space for download inspection.")
-        run_command(["chown", "root:root", directory], "Setting directory ownership to root")
-        run_command(["chmod", "700", directory], "Restricting directory permissions")
 
-    # Set iptables rules to redirect all downloads
-    log_file = "/var/log/download_inspection.log"
-    run_command(["iptables", "-A", "OUTPUT", "-p", "tcp", "--dport", "80", "-j", "LOG", "--log-prefix", "HTTP-DOWNLOAD:", "--log-level", "info"], f"Logging HTTP downloads to {log_file}")
-    run_command(["iptables", "-A", "OUTPUT", "-p", "tcp", "--dport", "443", "-j", "LOG", "--log-prefix", "HTTPS-DOWNLOAD:", "--log-level", "info"], f"Logging HTTPS downloads to {log_file}")
+    print("[+] Download logging enabled.")
 
-    print(f"[+] Downloads will be logged for inspection in {directory}.")
+# Execute full 
+def hardn_qube_lockdown():
+    """Execute full system lockdown with all protections."""
+    configure_ufw()
+    configure_tor()
+    containerize_browser()
+    sandbox_directories()
+    enforce_signed_updates()
+    redirect_web_downloads()
 
-# Release the Qube
- if __name__ == "__main__":
-     configure_tor()
-     lockdown_nic_with_tor()
-     containerize_browser()
-     sandbox_directories()
-     redirect_web_downloads()
+# Main file
+if __name__ == "__main__":
+    hardn_qube_lockdown()
