@@ -1,29 +1,27 @@
 from setuptools import setup, find_packages
-# still need to fix file path to update new file name
 
 setup(
-    name="hardn",  
-    version="1.4.0",
-    author="Tim 'TANK' Burns", #me
-    author_email="support@grdv.org",
-    description="A Linux security hardening automation tool",
-    long_description=open("README.md").read(),
-    long_description_content_type="text/markdown",
-    url="https://github.com/OpenSource-For-Freedom/Linux",
+    name="hardn",
+    version="1.0.0",
     packages=find_packages(),
     install_requires=[
-        "tk", "setuptools", "wheel"
-    ],
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "Operating System :: POSIX :: Linux",
-        "License :: OSI Approved :: MIT License",
-        "Topic :: Security", # never less
+        "tkinter",  # GUI that's huge 
+        "requests", #  requests... 
+        "lynis",    # thanks to kiukcat :)
     ],
     entry_points={
         "console_scripts": [
             "hardn=hardn.hardn:main",
         ],
     },
-    python_requires=">=3.8",
+    author="Tim 'Tank' Burns", #me 
+    description="HARDN - The Linux Security Project",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    url="https://github.com/YOUR_GITHUB_USERNAME/HARDN",
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: POSIX :: Linux",
+    ],
 )
