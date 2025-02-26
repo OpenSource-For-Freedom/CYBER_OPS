@@ -24,7 +24,7 @@ def ensure_root():
 
 ensure_root()
 
-# PRINT BANNER
+# nasty banner 
 def print_ascii_art():
     art = """
              ██░ ██  ▄▄▄       ██▀███  ▓█████▄  ███▄    █ 
@@ -50,19 +50,11 @@ def print_ascii_art():
     """
     print(art)
 
-# Logging 
-LOG_DIR = "/var/log/hardn" # best directory IMO
-os.makedirs(LOG_DIR, exist_ok=True)
-LOG_FILE = os.path.join(LOG_DIR, f"hardn_security_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+# Paths to the deep guys 
+HARDN_QUBE_PATH = os.path.abspath("HARDN_qubes.py")
+HARDN_DARK_PATH = os.path.abspath("HARDN_dark.py")
 
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-# GUI stuff and buttons edited 
+# GUI for asking after file runs for qubes or dark run 
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
@@ -79,8 +71,8 @@ class StatusGUI:
         self.text_area = tk.Text(self.root, height=20, width=90, state=tk.DISABLED)
         self.text_area.pack(pady=10)
 
-        self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
-        self.close_button.pack(pady=10)
+        self.complete_button = tk.Button(self.root, text="Continue to Advanced Security", command=self.show_advanced_options, state=tk.DISABLED)
+        self.complete_button.pack(pady=10)
 
         self.total_steps = 10
         self.current_step = 0
@@ -99,13 +91,50 @@ class StatusGUI:
 
     def complete(self):
         self.update_status("System Hardening Complete!")
-        self.close_button.config(state=tk.NORMAL)
+        self.complete_button.config(state=tk.NORMAL)
+
+    def show_advanced_options(self):
+        """Show Advanced Security Options after main run"""
+        self.advanced_window = tk.Toplevel(self.root)
+        self.advanced_window.title("Advanced Security Options")
+        self.advanced_window.geometry("500x300")
+        
+        tk.Label(self.advanced_window, text="Would you like to enable additional security features?", font=("Mono", 12)).pack(pady=10)
+
+        qube_button = tk.Button(self.advanced_window, text="Run HARDN Qube (TOR & Sandbox)", command=self.run_hardn_qube)
+        qube_button.pack(pady=5)
+
+        dark_button = tk.Button(self.advanced_window, text="Run HARDN Dark (Deep Lockdown)", command=self.run_hardn_dark)
+        dark_button.pack(pady=5)
+
+        close_button = tk.Button(self.advanced_window, text="Exit", command=self.advanced_window.destroy)
+        close_button.pack(pady=10)
+
+    def run_hardn_qube(self):
+        """Executes HARDN Qube for TOR-based lockdown"""
+        if os.path.exists(HARDN_QUBE_PATH):
+            messagebox.showinfo("Executing", "Running HARDN Qube...")
+            subprocess.Popen(["python3", HARDN_QUBE_PATH])
+            self.update_status("HARDN Qube initiated.")
+            logging.info("User selected to run HARDN Qube.")
+        else:
+            messagebox.showerror("Error", "HARDN Qube script not found.")
+
+    def run_hardn_dark(self):
+        """Executes HARDN Dark for full system lockdown"""
+        if os.path.exists(HARDN_DARK_PATH):
+            messagebox.showinfo("Executing", "Running HARDN Dark...")
+            subprocess.Popen(["python3", HARDN_DARK_PATH])
+            self.update_status("HARDN Dark initiated.")
+            logging.info("User selected to run HARDN Dark.")
+        else:
+            messagebox.showerror("Error", "HARDN Dark script not found.")
 
     def run(self):
         self.root.mainloop()
 
 status_gui = StatusGUI()
-
+############# 
 # Command assit 
 def exec_command(command):
     try:
