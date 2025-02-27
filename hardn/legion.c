@@ -1,5 +1,5 @@
-
-// this file has the gui and deeper scan/ log capability for deploying action vs just scannin
+// adding whitelist and trying to increase false positive prevention while scanning and loads
+// this file has the gui and deeper scan/ log capability for deploying action vs just scanning
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +17,7 @@
 #define EVENT_SIZE (sizeof(struct inotify_event) + 256)
 #define BUFFER_LEN (1024 * EVENT_SIZE)
 #define LOG_FILE "/var/log/legion_scan.log"
+#define WHITELIST_FILE "/etc/legion/whitelist.txt"
 #define YARA_RULES_FILE "/etc/legion/rules.yar"
 #define UPDATE_SCRIPT "/usr/local/bin/update_signatures.sh"
 
@@ -59,6 +60,26 @@ void update_signatures() {
     }
 }
 
+// checks if a file is whitelisted
+int is_whitelisted(const char *filename) {
+    FILE *whitelist = fopen(WHITELIST_FILE, "r");
+    if (!whitelist) {
+        return 0;  // No whitelist available, assume not whitelisted
+    }
+
+    char line[256];
+    int whitelisted = 0;
+    while (fgets(line, sizeof(line), whitelist)) {
+        line[strcspn(line, "\n")] = '\0';
+        if (strcmp(line, filename) == 0) {
+            whitelisted = 1;
+            break;
+        }
+    }
+    fclose(whitelist);
+    return whitelisted;
+}
+
 // loads malware stuff for scanning with error handling 
 void load_signatures(const char *filename) {
     FILE *file = fopen(filename, "r");
@@ -77,7 +98,6 @@ void load_signatures(const char *filename) {
 }
 
 // computes sha encryption for scanning 
-// I need to increase this to all other crypt lengths and hashes 
 void compute_sha256(const char *filename, char *output) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
@@ -104,7 +124,7 @@ void compute_sha256(const char *filename, char *output) {
 }
 
 // YARA
-void scan_with_yara(const char *filename) {
+void scan_with_yara(const char *filename, int *score) {
     YR_RULES *rules;
     YR_COMPILER *compiler;
     YR_SCANNER *scanner;
@@ -125,11 +145,10 @@ void scan_with_yara(const char *filename) {
     yr_compiler_destroy(compiler);
 
     yr_scanner_create(rules, &scanner);
-    if (yr_scanner_scan_file(scanner, filename) == 0) {
-        printf("[YARA] No threats detected in %s\n", filename);
-    } else {
+    if (yr_scanner_scan_file(scanner, filename) != 0) {
         printf("[YARA] Potential malware found in %s\n", filename);
         log_detection("[YARA DETECTION] Potential malware found.");
+        (*score)++;  // Increase score for suspicious activity
     }
 
     yr_scanner_destroy(scanner);
@@ -190,13 +209,22 @@ void *monitor_directory(void *arg) {
             perror("Error reading inotify events");
             continue;
         }
-// notify 
+
         for (int i = 0; i < length;) {
             struct inotify_event *event = (struct inotify_event *)&buffer[i];
             if (event->len && (event->mask & (IN_CREATE | IN_MODIFY))) {
                 printf("[REAL-TIME] Detected change in %s, scanning...\n", event->name);
-                scan_with_yara(event->name);
-                show_alert(event->name, "Unknown Type");
+
+                if (is_whitelisted(event->name)) {
+                    printf("[INFO] %s is whitelisted, skipping scan.\n", event->name);
+                } else {
+                    int score = 0;
+                    scan_with_yara(event->name, &score);
+                    
+                    if (score > 0) { // Only alert if score is high enough
+                        show_alert(event->name, "Unknown Type");
+                    }
+                }
             }
             i += EVENT_SIZE + event->len;
         }
