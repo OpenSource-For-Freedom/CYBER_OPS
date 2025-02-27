@@ -1,3 +1,5 @@
+
+// this file has the gui and deeper scan/ log capability for deploying action vs just scannin
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,29 +11,44 @@
 #include <openssl/sha.h>
 #include <sys/inotify.h>
 #include <libyara.h>
+#include <time.h>
 
 #define MAX_SIGNATURES 100
 #define EVENT_SIZE (sizeof(struct inotify_event) + 256)
 #define BUFFER_LEN (1024 * EVENT_SIZE)
 #define LOG_FILE "/var/log/legion_scan.log"
-#define YARA_RULES_FILE "rules.yar"
-#define UPDATE_SCRIPT "./update_signatures.sh"
+#define YARA_RULES_FILE "/etc/legion/rules.yar"
+#define UPDATE_SCRIPT "/usr/local/bin/update_signatures.sh"
 
 char *signatures[MAX_SIGNATURES];
 int signature_count = 0;
 
-// logs for Suricata, OSSEC, Wazuh
+// this just detects and logs 
 void log_detection(const char *message) {
     FILE *logfile = fopen(LOG_FILE, "a");
     if (!logfile) {
         perror("Error opening log file");
         return;
     }
-    fprintf(logfile, "%s\n", message);
+    time_t now = time(NULL);
+    fprintf(logfile, "[%s] %s\n", ctime(&now), message);
     fclose(logfile);
 }
 
-// update malware signatures
+// make sure sec tools are installed 
+void check_dependencies() {
+    const char *tools[] = {"clamdscan", "suricata", "yara", NULL};
+    for (int i = 0; tools[i] != NULL; i++) {
+        char command[256];
+        snprintf(command, sizeof(command), "command -v %s >/dev/null 2>&1", tools[i]);
+        if (system(command) != 0) {
+            printf("[ERROR] %s is not installed. Please install it.\n", tools[i]);
+            exit(1);
+        }
+    }
+}
+
+// keeps bad file signatures updated based on outbound resources 
 void update_signatures() {
     printf("[INFO] Updating malware signatures...\n");
     int status = system(UPDATE_SCRIPT);
@@ -42,7 +59,7 @@ void update_signatures() {
     }
 }
 
-// load malware signatures from local file
+// loads malware stuff for scanning with error handling 
 void load_signatures(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -59,7 +76,8 @@ void load_signatures(const char *filename) {
     fclose(file);
 }
 
-// SHA-256 hash file computation 
+// computes sha encryption for scanning 
+// I need to increase this to all other crypt lengths and hashes 
 void compute_sha256(const char *filename, char *output) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
@@ -85,7 +103,7 @@ void compute_sha256(const char *filename, char *output) {
     }
 }
 
-// YARA rules
+// YARA
 void scan_with_yara(const char *filename) {
     YR_RULES *rules;
     YR_COMPILER *compiler;
@@ -119,65 +137,37 @@ void scan_with_yara(const char *filename) {
     yr_finalize();
 }
 
-// file for signatures + malware hashes. 
-void *scan_file(void *arg) {
-    char *filename = (char *)arg;
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0) {
-        perror("Error opening file");
-        pthread_exit(NULL);
+//  Zenity gui
+void show_alert(const char *filename, const char *filetype) {
+    char command[512];
+    snprintf(command, sizeof(command),
+        "zenity --warning --title='Legion Alert' --text='Suspicious file detected!\\n\\nFile: %s\\nType: %s\\n\\nChoose an action:' --ok-label='Quarantine' --extra-button='Delete' --extra-button='Ignore'",
+        filename, filetype);
+    
+    FILE *fp = popen(command, "r");
+    if (fp == NULL) {
+        perror("Failed to run Zenity");
+        return;
     }
 
-    struct stat sb;
-    if (fstat(fd, &sb) == -1) {
-        perror("Error getting file size");
-        close(fd);
-        pthread_exit(NULL);
+    char response[128];
+    fgets(response, sizeof(response), fp);
+    pclose(fp);
+
+    if (strstr(response, "Quarantine")) {
+        snprintf(command, sizeof(command), "mv %s /var/lib/legion/quarantine/", filename);
+        system(command);
+        log_detection("[ACTION] File quarantined.");
+    } else if (strstr(response, "Delete")) {
+        snprintf(command, sizeof(command), "rm -f %s", filename);
+        system(command);
+        log_detection("[ACTION] File deleted.");
+    } else {
+        log_detection("[ACTION] User ignored the alert.");
     }
-
-    if (sb.st_size == 0) {
-        printf("[EMPTY] %s\n", filename);
-        close(fd);
-        pthread_exit(NULL);
-    }
-
-    char *file_data = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (file_data == MAP_FAILED) {
-        perror("Error mapping file");
-        close(fd);
-        pthread_exit(NULL);
-    }
-
-    int infected = 0;
-    for (int i = 0; i < signature_count; i++) {
-        if (memmem(file_data, sb.st_size, signatures[i], strlen(signatures[i]))) {
-            printf("[INFECTED] %s contains malware signature: %s\n", filename, signatures[i]);
-            log_detection("[SIGNATURE MATCH] Malware detected.");
-            infected = 1;
-            break;
-        }
-    }
-
-    char file_hash[SHA256_DIGEST_LENGTH * 2 + 1] = {0};
-    compute_sha256(filename, file_hash);
-    if (strcmp(file_hash, "ERROR") != 0) {
-        printf("[HASH] %s SHA-256: %s\n", filename, file_hash);
-        log_detection("[HASH DETECTION] File hash detected.");
-    }
-
-    scan_with_yara(filename);
-
-    munmap(file_data, sb.st_size);
-    close(fd);
-
-    if (!infected) {
-        printf("[CLEAN] %s is safe.\n", filename);
-    }
-
-    pthread_exit(NULL);
 }
 
-// monitor directory in real time 
+// watches for directory changes and monitors 
 void *monitor_directory(void *arg) {
     char *dir = (char *)arg;
     int inotify_fd = inotify_init();
@@ -200,12 +190,13 @@ void *monitor_directory(void *arg) {
             perror("Error reading inotify events");
             continue;
         }
-
+// notify 
         for (int i = 0; i < length;) {
             struct inotify_event *event = (struct inotify_event *)&buffer[i];
             if (event->len && (event->mask & (IN_CREATE | IN_MODIFY))) {
                 printf("[REAL-TIME] Detected change in %s, scanning...\n", event->name);
-                scan_file(event->name);
+                scan_with_yara(event->name);
+                show_alert(event->name, "Unknown Type");
             }
             i += EVENT_SIZE + event->len;
         }
@@ -222,6 +213,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    check_dependencies();
     update_signatures();
     load_signatures(argv[1]);
 
