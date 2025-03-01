@@ -1,13 +1,9 @@
 import os
 import subprocess
-import shutil
 import sys
-import signal
-import time
 import shlex
 import logging
 import threading
-import getpass
 import tkinter as tk
 from tkinter import ttk  
 from datetime import datetime
@@ -44,7 +40,7 @@ def print_ascii_art():
                             Hardening and
                      System protection measures.
                          License: MIT License
-                            Version: 1.5.1
+                            Version: 1.5.3
                            Dev: Tim "TANK" Burns
       GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
     """
@@ -84,7 +80,7 @@ class StatusGUI:
         self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
         self.close_button.pack(pady=10)
 
-        self.total_steps = 15
+        self.total_steps = 9
         self.current_step = 0
 
     def update_status(self, message, progress=None):
@@ -123,82 +119,83 @@ def exec_command(command):
         status_gui.update_status(f"{command}\nError: {e.stderr.strip()}\n")
         return None
 
-# REMOVE CLAMAV
+# SYSTEM HARDENING TASKS
 def remove_clamav():
     status_gui.update_status("Removing ClamAV...")
     exec_command("apt remove --purge -y clamav clamav-daemon")
     exec_command("rm -rf /var/lib/clamav")
+    
+    # TCP WRAPPERS
+def configure_tcp_wrappers():
+    status_gui.update_status("Configuring TCP Wrappers...")
+    exec_command("apt install -y tcpd")
 
-# INSTALL ESET NOD32
+    allowed_services = ["sshd", "vsftpd", "telnetd", "xinetd"]
+    trusted_ips = ["192.168.1.", "10.0.0."]  # only for internal
+
+    allow_rules = "\n".join([f"{service}: {', '.join(trusted_ips)}" for service in allowed_services])
+    with open("/etc/hosts.allow", "w") as allow_file:
+        allow_file.write(f"{allow_rules}\n")
+
+    with open("/etc/hosts.deny", "w") as deny_file:
+        deny_file.write("ALL: ALL\n")
+
+    status_gui.update_status("TCP Wrappers set up. Restarting services...")
+    exec_command("systemctl restart ssh")
+    exec_command("systemctl restart vsftpd")
+    
+    # NOD32 
 def install_eset_nod32():
     status_gui.update_status("Installing ESET NOD32 Antivirus...")
-    exec_command("wget -q https://download.eset.com/com/eset/apps/home/av/linux/latest/eset_nod32av_64bit.deb -O /tmp/eset.deb")
-    exec_command("dpkg -i /tmp/eset.deb || apt --fix-broken install -y")
-    exec_command("rm -f /tmp/eset.deb")
-
-# ENSURE AUTO-UPDATES FOR ESET
+    exec_command("wget -q -O /tmp/eset.deb https://download.eset.com/com/eset/apps/home/av/linux/latest/eset_nod32av_64bit.deb")
+    if os.path.exists("/tmp/eset.deb"):
+        exec_command("dpkg -i /tmp/eset.deb || apt --fix-broken install -y")
+        exec_command("rm -f /tmp/eset.deb")
+    else:
+        status_gui.update_status("Error: ESET package download failed.")
+# updates
 def setup_auto_updates():
     status_gui.update_status("Setting up ESET NOD32 Auto-Update in Cron...")
     eset_update_command = "/opt/eset/esets/sbin/esets_update"
     if os.path.exists(eset_update_command):
         exec_command(f"(crontab -l 2>/dev/null; echo '0 3 * * * {eset_update_command}') | crontab -")
-        status_gui.update_status("ESET Auto-Update Scheduled!")
     else:
         status_gui.update_status("Error: ESET Update Command Not Found.")
 
-# CONFIGURE FAIL2BAN
 def configure_fail2ban():
     status_gui.update_status("Configuring Fail2Ban...")
     exec_command("apt install -y fail2ban")
     exec_command("systemctl restart fail2ban")
-    exec_command("systemctl enable fail2ban")
+    exec_command("systemctl enable --now fail2ban")
 
-# CONFIGURE GRUB SECURITY SETTINGS
-def configure_grub():
-    status_gui.update_status("Configuring GRUB Security Settings...")
-    grub_settings = """
-    GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT lsm=apparmor,landlock,lockdown,yama,integrity,bpf apparmor=1 security=apparmor"
-    """
-    with open("/etc/default/grub", "a") as grub_file:
-        grub_file.write(grub_settings + "\n")
-    exec_command("update-grub")
-
-# CONFIGURE FIREWALL
 def configure_firewall():
     status_gui.update_status("Configuring Firewall...")
     exec_command("ufw default deny incoming")
     exec_command("ufw default allow outgoing")
-    exec_command("ufw allow 80,443/tcp")
     exec_command("ufw allow out 80,443/tcp")
-    exec_command("ufw --force enable")
+    exec_command("ufw --force enable && ufw reload")
 
-# RUN SECURITY AUDITS
-def run_audits():
-    status_gui.update_status("Running Security Audits...")
-    exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
-    status_gui.update_status("Scanning system with ESET NOD32...")
-    exec_command("/opt/eset/esets/sbin/esets_scan /home")
-    status_gui.update_status("Security Audits Completed!")
-
-# USB DEVICE LOCKDOWN
 def disable_usb():
     status_gui.update_status("Locking down USB devices...")
     exec_command("echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf")
-    exec_command("modprobe -r usb-storage")
+    exec_command("modprobe -r usb-storage || echo 'USB storage module in use, cannot unload.'")
 
-# SOFTWARE INTEGRITY CHECK
 def software_integrity_check():
     status_gui.update_status("Checking software integrity...")
     exec_command("debsums -s")
+
+def run_audits():
+    status_gui.update_status("Running Security Audits...")
+    exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
 
 # MAIN FUNCTION
 def start_hardening():
     threading.Thread(target=lambda: [
         remove_clamav(),
+        configure_tcp_wrappers()
         install_eset_nod32(),
         setup_auto_updates(),
         configure_fail2ban(),
-        configure_grub(),
         configure_firewall(),
         disable_usb(),
         software_integrity_check(),
@@ -206,6 +203,7 @@ def start_hardening():
     ], daemon=True).start()
 
 def main():
+    print_ascii_art()
     status_gui.root.after(100, start_hardening)
     status_gui.run()
 
