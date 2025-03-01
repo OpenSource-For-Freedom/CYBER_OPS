@@ -5,7 +5,7 @@ import shlex
 import logging
 import threading
 import tkinter as tk
-from tkinter import ttk, messagebox  # Added messagebox for GUI popups
+from tkinter import ttk, messagebox  # added 
 from datetime import datetime
 
 # ROOT ENSURE
@@ -89,6 +89,23 @@ class StatusGUI:
         self.update_status("System Hardening Complete!")
         self.complete_button.config(state=tk.NORMAL)
 
+    def show_advanced_options(self):
+        """Show Advanced Security Options after main run"""
+        self.advanced_window = tk.Toplevel(self.root)
+        self.advanced_window.title("Advanced Security Options")
+        self.advanced_window.geometry("500x300")
+        
+        tk.Label(self.advanced_window, text="Would you like to enable additional security features?", font=("Mono", 12)).pack(pady=10)
+
+        qube_button = tk.Button(self.advanced_window, text="Run HARDN Qube (TOR & Sandbox)", command=self.run_hardn_qube)
+        qube_button.pack(pady=5)
+
+        dark_button = tk.Button(self.advanced_window, text="Run HARDN Dark (Deep Lockdown)", command=self.run_hardn_dark)
+        dark_button.pack(pady=5)
+
+        close_button = tk.Button(self.advanced_window, text="Exit", command=self.advanced_window.destroy)
+        close_button.pack(pady=10)
+
     def run(self):
         self.root.mainloop()
 
@@ -108,7 +125,7 @@ def exec_command(command):
         logging.error(f"Failed: {command}\n{error_msg}")
         return None
 
-# SECURITY FUNCTIONS
+# SECURITY
 def remove_clamav():
     status_gui.update_status("Removing ClamAV...")
     exec_command("apt remove --purge -y clamav clamav-daemon")
@@ -131,32 +148,6 @@ def configure_tcp_wrappers():
     status_gui.update_status("TCP Wrappers configured. Restarting services...")
     exec_command("systemctl restart ssh")
     exec_command("systemctl restart vsftpd")
-
-def configure_fail2ban():
-    status_gui.update_status("Setting up Fail2Ban...")
-    exec_command("apt install -y fail2ban")
-    exec_command("systemctl restart fail2ban")
-    exec_command("systemctl enable --now fail2ban")
-
-def configure_firewall():
-    status_gui.update_status("Configuring Firewall...")
-    exec_command("ufw default deny incoming")
-    exec_command("ufw default allow outgoing")
-    exec_command("ufw allow out 80,443/tcp")
-    exec_command("ufw --force enable && ufw reload")
-
-def disable_usb():
-    status_gui.update_status("Locking down USB devices...")
-    exec_command("echo 'blacklist usb-storage' >> /etc/modprobe.d/usb-storage.conf")
-    exec_command("modprobe -r usb-storage || echo 'USB storage module in use, cannot unload.'")
-
-def software_integrity_check():
-    status_gui.update_status("Software Integrity Check...")
-    exec_command("debsums -s")
-
-def run_audits():
-    status_gui.update_status("Running Security Audits...")
-    exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
 
 # Start the full security hardening process
 def start_hardening():
