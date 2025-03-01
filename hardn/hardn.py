@@ -5,10 +5,10 @@ import shlex
 import logging
 import threading
 import tkinter as tk
-from tkinter import ttk, messagebox  # added
+from tkinter import ttk, messagebox  # Added messagebox for GUI popups
 from datetime import datetime
 
-# ROOT STUFF
+# ROOT ENSURE
 def ensure_root():
     if os.geteuid() != 0:
         print("Restarting as root...")
@@ -20,8 +20,8 @@ def ensure_root():
 
 ensure_root()
 
-# NASTY
-def print_ascii_art(): # the greatest banner known to man and alien
+# nasty banner 
+def print_ascii_art():
     art = """
              ██░ ██  ▄▄▄       ██▀███  ▓█████▄  ███▄    █ 
             ▓██░ ██▒▒████▄    ▓██ ▒ ██▒▒██▀ ██▌ ██ ▀█   █ 
@@ -46,7 +46,7 @@ def print_ascii_art(): # the greatest banner known to man and alien
     """
     print(art)
 
-# Paths to the deep and qubes*
+# Paths to the deep 
 HARDN_QUBE_PATH = os.path.abspath("HARDN_qubes.py")
 HARDN_DARK_PATH = os.path.abspath("HARDN_dark.py")
 
@@ -113,7 +113,7 @@ def remove_clamav():
     status_gui.update_status("Removing ClamAV...")
     exec_command("apt remove --purge -y clamav clamav-daemon")
     exec_command("rm -rf /var/lib/clamav")
-# TCP WRAP
+
 def configure_tcp_wrappers():
     status_gui.update_status("Configuring TCP Wrappers...")
     exec_command("apt install -y tcpd")
@@ -131,13 +131,13 @@ def configure_tcp_wrappers():
     status_gui.update_status("TCP Wrappers configured. Restarting services...")
     exec_command("systemctl restart ssh")
     exec_command("systemctl restart vsftpd")
-# F2B
+
 def configure_fail2ban():
     status_gui.update_status("Setting up Fail2Ban...")
     exec_command("apt install -y fail2ban")
     exec_command("systemctl restart fail2ban")
     exec_command("systemctl enable --now fail2ban")
-# UFW
+
 def configure_firewall():
     status_gui.update_status("Configuring Firewall...")
     exec_command("ufw default deny incoming")
@@ -158,7 +158,7 @@ def run_audits():
     status_gui.update_status("Running Security Audits...")
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
 
-# START ALL
+# Start the full security hardening process
 def start_hardening():
     threading.Thread(target=lambda: [
         remove_clamav(),
