@@ -73,14 +73,7 @@ def disable_core_dumps(test_mode=False):
     backup_file("/etc/security/limits.conf", test_mode)
     run_command("echo '* hard core 0' | sudo tee -a /etc/security/limits.conf > /dev/null", "Core dumps disabled", test_mode)
 
-def configure_tcp_wrappers(test_mode=False):
-    """Deny all network connections by default using TCP Wrappers"""
-    log("[+] Configuring TCP Wrappers...")
-    if os.path.isfile("/etc/hosts.deny"):
-        backup_file("/etc/hosts.deny", test_mode)
-        run_command("echo 'ALL: ALL' | sudo tee /etc/hosts.deny > /dev/null", "TCP Wrappers enforced (ALL: ALL)", test_mode)
-    else:
-        log("[-] /etc/hosts.deny does not exist. Skipping.")
+# removed tdp wrappers here becasue its in main file
 
 def restrict_non_local_logins(test_mode=False):
     """Restrict non-local logins except SSH"""
