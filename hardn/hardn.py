@@ -5,10 +5,10 @@ import shlex
 import logging
 import threading
 import tkinter as tk
-from tkinter import ttk  
+from tkinter import ttk, messagebox  # added
 from datetime import datetime
 
-# ROOT ENSURE
+# ROOT STUFF
 def ensure_root():
     if os.geteuid() != 0:
         print("Restarting as root...")
@@ -20,8 +20,8 @@ def ensure_root():
 
 ensure_root()
 
-# PRINT BANNER
-def print_ascii_art():
+# NASTY
+def print_ascii_art(): # the greatest banner known to man and alien
     art = """
              ██░ ██  ▄▄▄       ██▀███  ▓█████▄  ███▄    █ 
             ▓██░ ██▒▒████▄    ▓██ ▒ ██▒▒██▀ ██▌ ██ ▀█   █ 
@@ -46,92 +46,80 @@ def print_ascii_art():
     """
     print(art)
 
+# Paths to the deep and qubes*
+HARDN_QUBE_PATH = os.path.abspath("HARDN_qubes.py")
+HARDN_DARK_PATH = os.path.abspath("HARDN_dark.py")
 
-# LOGGING SETUP
-LOG_DIR = os.path.expanduser("~/security_logs")
-os.makedirs(LOG_DIR, exist_ok=True)
-DATE = datetime.now().strftime("%Y%m%d_%H%M%S")
-SCRIPT_LOG = os.path.join(LOG_DIR, f"script_execution_{DATE}.log")
-
-logging.basicConfig(
-    filename=SCRIPT_LOG,
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-# STATUS GUI 
+# GUI + ask for dark file after hardn finishes
 class StatusGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("System Hardening Progress")
+        self.root.title("HARDN Linux - Security Hardening Progress")
         self.root.geometry("800x500")
         self.root.resizable(False, False)
 
-        self.label = tk.Label(self.root, text="Starting system hardening...", font=("Mono", 14), wraplength=780)
+        self.label = tk.Label(self.root, text="Initializing system hardening...", font=("Mono", 14))
         self.label.pack(pady=10)
 
-        self.progress = ttk.Progressbar(self.root, length=700, mode="determinate")  
+        self.progress = ttk.Progressbar(self.root, length=700, mode="determinate")
         self.progress.pack(pady=10)
 
         self.text_area = tk.Text(self.root, height=20, width=90, state=tk.DISABLED)
         self.text_area.pack(pady=10)
 
-        self.close_button = tk.Button(self.root, text="Close", command=self.root.quit, state=tk.DISABLED)
-        self.close_button.pack(pady=10)
+        self.complete_button = tk.Button(self.root, text="Continue to Advanced Security", command=self.show_advanced_options, state=tk.DISABLED)
+        self.complete_button.pack(pady=10)
 
-        self.total_steps = 9
+        self.total_steps = 10
         self.current_step = 0
 
-    def update_status(self, message, progress=None):
+    def update_status(self, message):
         self.label.config(text=message)
         self.text_area.config(state=tk.NORMAL)
         self.text_area.insert(tk.END, message + "\n")
         self.text_area.config(state=tk.DISABLED)
         self.text_area.yview(tk.END)
 
-        if progress is not None:
-            self.progress["value"] = progress
-        else:
-            self.current_step += 1
-            progress_percent = int((self.current_step / self.total_steps) * 100)
-            self.progress["value"] = progress_percent
-
+        self.current_step += 1
+        progress_percent = int((self.current_step / self.total_steps) * 100)
+        self.progress["value"] = progress_percent
         self.root.update_idletasks()
 
     def complete(self):
-        self.update_status("System Hardening Complete!", 100)
-        self.close_button.config(state=tk.NORMAL)
+        self.update_status("System Hardening Complete!")
+        self.complete_button.config(state=tk.NORMAL)
 
     def run(self):
         self.root.mainloop()
 
 status_gui = StatusGUI()
 
-# EXECUTE COMMAND & LOG IN GUI
+# EXECUTE COMMAND
 def exec_command(command):
     try:
         result = subprocess.run(shlex.split(command), check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output = result.stdout.strip()
         status_gui.update_status(f"{command}\n{output}\n")
+        logging.info(f"Executed: {command}\nOutput: {output}")
         return output
     except subprocess.CalledProcessError as e:
-        status_gui.update_status(f"{command}\nError: {e.stderr.strip()}\n")
+        error_msg = f"Error: {e.stderr.strip()}"
+        status_gui.update_status(error_msg)
+        logging.error(f"Failed: {command}\n{error_msg}")
         return None
 
-# SYSTEM HARDENING TASKS
+# SECURITY FUNCTIONS
 def remove_clamav():
     status_gui.update_status("Removing ClamAV...")
     exec_command("apt remove --purge -y clamav clamav-daemon")
     exec_command("rm -rf /var/lib/clamav")
-    
-    # TCP WRAPPERS
+# TCP WRAP
 def configure_tcp_wrappers():
     status_gui.update_status("Configuring TCP Wrappers...")
     exec_command("apt install -y tcpd")
 
     allowed_services = ["sshd", "vsftpd", "telnetd", "xinetd"]
-    trusted_ips = ["192.168.1.", "10.0.0."]  # only for internal
+    trusted_ips = ["192.168.1.", "10.0.0."]
 
     allow_rules = "\n".join([f"{service}: {', '.join(trusted_ips)}" for service in allowed_services])
     with open("/etc/hosts.allow", "w") as allow_file:
@@ -140,34 +128,16 @@ def configure_tcp_wrappers():
     with open("/etc/hosts.deny", "w") as deny_file:
         deny_file.write("ALL: ALL\n")
 
-    status_gui.update_status("TCP Wrappers set up. Restarting services...")
+    status_gui.update_status("TCP Wrappers configured. Restarting services...")
     exec_command("systemctl restart ssh")
     exec_command("systemctl restart vsftpd")
-    
-    # NOD32 
-def install_eset_nod32():
-    status_gui.update_status("Installing ESET NOD32 Antivirus...")
-    exec_command("wget -q -O /tmp/eset.deb https://download.eset.com/com/eset/apps/home/av/linux/latest/eset_nod32av_64bit.deb")
-    if os.path.exists("/tmp/eset.deb"):
-        exec_command("dpkg -i /tmp/eset.deb || apt --fix-broken install -y")
-        exec_command("rm -f /tmp/eset.deb")
-    else:
-        status_gui.update_status("Error: ESET package download failed.")
-# updates
-def setup_auto_updates():
-    status_gui.update_status("Setting up ESET NOD32 Auto-Update in Cron...")
-    eset_update_command = "/opt/eset/esets/sbin/esets_update"
-    if os.path.exists(eset_update_command):
-        exec_command(f"(crontab -l 2>/dev/null; echo '0 3 * * * {eset_update_command}') | crontab -")
-    else:
-        status_gui.update_status("Error: ESET Update Command Not Found.")
-
+# F2B
 def configure_fail2ban():
-    status_gui.update_status("Configuring Fail2Ban...")
+    status_gui.update_status("Setting up Fail2Ban...")
     exec_command("apt install -y fail2ban")
     exec_command("systemctl restart fail2ban")
     exec_command("systemctl enable --now fail2ban")
-
+# UFW
 def configure_firewall():
     status_gui.update_status("Configuring Firewall...")
     exec_command("ufw default deny incoming")
@@ -181,27 +151,29 @@ def disable_usb():
     exec_command("modprobe -r usb-storage || echo 'USB storage module in use, cannot unload.'")
 
 def software_integrity_check():
-    status_gui.update_status("Checking software integrity...")
+    status_gui.update_status("Software Integrity Check...")
     exec_command("debsums -s")
 
 def run_audits():
     status_gui.update_status("Running Security Audits...")
     exec_command("lynis audit system --quick | tee /var/log/lynis_audit.log")
 
-# MAIN FUNCTION
+# START ALL
 def start_hardening():
     threading.Thread(target=lambda: [
         remove_clamav(),
-        configure_tcp_wrappers()
+        configure_tcp_wrappers(),
         install_eset_nod32(),
         setup_auto_updates(),
         configure_fail2ban(),
         configure_firewall(),
         disable_usb(),
         software_integrity_check(),
-        run_audits()
+        run_audits(),
+        status_gui.complete()
     ], daemon=True).start()
 
+# Run Main
 def main():
     print_ascii_art()
     status_gui.root.after(100, start_hardening)
