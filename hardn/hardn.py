@@ -8,7 +8,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox  # added 
 from datetime import datetime
 
-# ROOT ENSURE
+# ROOT 
 def ensure_root():
     if os.geteuid() != 0:
         print("Restarting as root...")
@@ -20,7 +20,7 @@ def ensure_root():
 
 ensure_root()
 
-# nasty banner 
+# THE NASTY 
 def print_ascii_art():
     art = """
              ██░ ██  ▄▄▄       ██▀███  ▓█████▄  ███▄    █ 
@@ -46,7 +46,7 @@ def print_ascii_art():
     """
     print(art)
 
-# Paths to the deep 
+# PATHS TO HIRE
 HARDN_QUBE_PATH = os.path.abspath("HARDN_qubes.py")
 HARDN_DARK_PATH = os.path.abspath("HARDN_dark.py")
 
@@ -111,7 +111,7 @@ class StatusGUI:
 
 status_gui = StatusGUI()
 
-# EXECUTE COMMAND
+# EXECUTE sub
 def exec_command(command):
     try:
         result = subprocess.run(shlex.split(command), check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -145,11 +145,20 @@ def configure_tcp_wrappers():
     with open("/etc/hosts.deny", "w") as deny_file:
         deny_file.write("ALL: ALL\n")
 
-    status_gui.update_status("TCP Wrappers configured. Restarting services...")
-    exec_command("systemctl restart ssh")
-    exec_command("systemctl restart vsftpd")
+    status_gui.update_status("TCP Wrappers configured. Checking services...")
 
-# Start the full security hardening process
+    # CHECK fo ssh and VSFTPD pre-load
+    services = {"SSH": "sshd", "vsftpd": "vsftpd"}
+    for service_name, service in services.items():
+        check_service = exec_command(f"systemctl list-units --type=service | grep -i {service}")
+        if check_service:
+            exec_command(f"systemctl restart {service}")
+            status_gui.update_status(f"{service_name} restarted successfully.")
+        else:
+            status_gui.update_status(f"Warning: {service_name} service not found. Skipping restart.")
+
+
+# START ALL
 def start_hardening():
     threading.Thread(target=lambda: [
         remove_clamav(),
