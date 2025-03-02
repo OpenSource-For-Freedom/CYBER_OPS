@@ -11,6 +11,7 @@ from datetime import datetime
 # Tie in VM support and containerization 
 # Tie in API response and SSH again
 # ROOT 
+# Added VM compatibility 
 def ensure_root():
     if os.geteuid() != 0:
         print("Restarting as root...")
@@ -184,9 +185,20 @@ def configure_fail2ban():
     exec_command("systemctl restart fail2ban")
     exec_command("systemctl enable --now fail2ban")
 
+import shutil
+import subprocess
+# added VM compatibility in case it's running boot loader or eufi- thanks Alex :)
 def configure_grub():
     status_gui.update_status("Configuring GRUB Security Settings...")
-    exec_command("update-grub")
+    
+    # Check if GRUB is available
+    grub_cmd = shutil.which("update-grub") or shutil.which("grub-mkconfig")
+
+    if grub_cmd:
+        subprocess.run([grub_cmd, "-o", "/boot/grub/grub.cfg"], check=True)
+    else:
+        print("Warning: GRUB update command not found. Skipping GRUB update.")
+        print("If running inside a VM, this may not be necessary.")
 
 def configure_firewall():
     status_gui.update_status("Configuring Firewall...")
