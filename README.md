@@ -29,7 +29,9 @@
 ---
 # **Overview**  
 
-In the development of this repository, we aim to include all facets of **kernel hardening**, **penetration testing**, and **OS security** for Debian Linux systems, ensuring both security and stability.
+In the development of this repo, we aim to include all facets of **kernel hardening**, **penetration testing**, and **OS security** for Debian Linux systems, ensuring both security and stability.
+
+We will always take suggestions and mentioning of how to keep Linux secure and productivity high. 
 
 This document outlines the pre-release activities that need to be completed before finalizing the project release. These tasks are designed to reinforce security, improve performance, and streamline user management.
 
@@ -45,7 +47,7 @@ By following these guidelines, you will enhance system security, maintain stabil
 ### **System Hardening Research**
 
 - **Review and analyze hardening scripts**  
-  Study system-hardening scripts like **harbian-audit** to identify security best practices.  
+  Study system-hardening scripts like **harbian-audit** and **lynis-audits** to identify security best practices.  
   **Objective:** Adopt tested hardening methods for better security.  
 
 ### **Permission Security**  
