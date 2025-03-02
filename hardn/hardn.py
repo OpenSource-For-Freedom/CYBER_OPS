@@ -54,7 +54,13 @@ script_dir = os.path.dirname(os.path.abspath(__file__))  # Get script's director
 HARDN_QUBE_PATH = os.path.join(script_dir, "HARDN_qubes.py")
 HARDN_DARK_PATH = os.path.join(script_dir, "HARDN_dark.py")
 
-
+# Tkinter for Alex 
+try:
+    import tkinter
+except ModuleNotFoundError:
+    print("\nError: 'tkinter' module not found.")
+    print("To install it, run:\n\n    sudo apt update && sudo apt install python3-tk\n")
+    sys.exit(1)  # Exit if tkinter isn't there 
 
 # EXECUTE 
 def exec_command(command):
