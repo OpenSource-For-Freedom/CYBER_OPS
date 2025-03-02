@@ -49,9 +49,10 @@ def print_ascii_art():
     print(art)
 
 # DEP FILES TO THE DEEP
-HARDN_QUBE_PATH = os.path.abspath("HARDN_qubes.py")
-HARDN_DARK_PATH = os.path.abspath("HARDN_dark.py")
+script_dir = os.path.dirname(os.path.abspath(__file__))  # Get script's directory
 
+HARDN_QUBE_PATH = os.path.join(script_dir, "HARDN_qubes.py")
+HARDN_DARK_PATH = os.path.join(script_dir, "HARDN_dark.py")
 
 
 
