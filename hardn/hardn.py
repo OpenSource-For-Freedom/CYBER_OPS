@@ -49,13 +49,19 @@ def print_ascii_art():
     """
     print(art)
 
-# DEP FILES TO THE DEEP
-script_dir = os.path.dirname(os.path.abspath(__file__))  # Get script's directory
+import os
 
+# GET DIR
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# is path alongside current directory 
+# FILE PATH - to defendants 
 HARDN_QUBE_PATH = os.path.join(script_dir, "HARDN_qubes.py")
 HARDN_DARK_PATH = os.path.join(script_dir, "HARDN_dark.py")
 
-# Tkinter for Alex 
+print("HARDN_QUBE_PATH:", HARDN_QUBE_PATH)
+print("HARDN_DARK_PATH:", HARDN_DARK_PATH)
+
+# TKINTER-  for Alex, he helped find a few errors 
 try:
     import tkinter
 except ModuleNotFoundError:
