@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # need to add MAC rotating function before connecting to tor 
+# need to set UFW to align better with TOR and TCP wrappers so we dont have collisions 
 # HARDN_QUBE - The Debian OS Lockdown Tool using UFW Firewall
 import os
 import subprocess
@@ -17,14 +18,14 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-# booster and support function* 
+# SUPPORT
 def run_command(command, description=""):
     """Executes a shell command and logs output."""
     logger.info(f"[+] {description}")
     print(f"[+] {description}")
     try:
         if not isinstance(command, list):
-            raise ValueError("Command must be provided as a list.")
+            raise ValueError("Command must be provided as a list.") # error handling
         result = subprocess.run(command, text=True, check=True, capture_output=True)
         if result.stdout:
             logger.info(result.stdout)
@@ -49,25 +50,25 @@ def check_privileges():
 
 check_privileges()
 
-# UFW 
+# UFW for TOR
 def configure_ufw():
     """Configures UFW firewall rules for TOR-only traffic enforcement."""
     print("[+] Configuring UFW firewall rules...")
 
-    # make sure ufw is installed and enabled 
+    # VERIFY
     run_command(["apt", "install", "-y", "ufw"], "Installing UFW")
     run_command(["ufw", "disable"], "Disabling UFW temporarily to reset rules")
     run_command(["ufw", "reset"], "Resetting UFW rules")
 
-    # Default 
+    # DEFAULT (should already be in place fro parent file)
     run_command(["ufw", "default", "deny", "incoming"], "Denying all incoming traffic")
     run_command(["ufw", "default", "deny", "outgoing"], "Denying all outgoing traffic")
 
-    # TOR traffic ONLY 
+    # TOR ONLY
     run_command(["ufw", "allow", "out", "9040/tcp"], "Allowing TOR (9040)")
     run_command(["ufw", "allow", "out", "9053/udp"], "Allowing TOR DNS (9053)")
 
-    # Debian updates (APT)
+    # DEBIAN ONLY (APT) for TOR
     run_command(["ufw", "allow", "out", "53,67,123/udp"], "Allowing DNS, DHCP, NTP")
     run_command(["ufw", "allow", "out", "80/tcp"], "Allowing HTTP for APT updates")
     run_command(["ufw", "allow", "out", "443/tcp"], "Allowing HTTPS for secure updates")
@@ -80,14 +81,14 @@ def configure_ufw():
 
     print("[+] UFW firewall rules applied successfully.")
 
-# Configure TOR + Snowflake bridge
+# CCONFIG TOR + Snowflake bridge
 def configure_tor():
     """Install and configure TOR with Snowflake bridge."""
     print("[+] Configuring TOR with Snowflake bridge...")
     run_command(["apt", "update"], "Updating package lists")
     run_command(["apt", "install", "-y", "tor", "snowflake-client"], "Installing TOR and Snowflake client")
 
-    # buikd tor and snowflake... we can choose a diff bridge if this isn't what we want for now 
+    # BUILD TOR - we can choose a diff bridge if this isn't what we want for now 
     torrc_path = "/etc/tor/torrc"
     torrc_content = """
 ClientTransportPlugin snowflake exec /usr/bin/snowflake-client
@@ -104,19 +105,20 @@ TransPort 9040
         print(f"[-] Failed to write TOR config: {e}")
         exit(1)
 
-    # Set perms + restart TOR
+    # ROUTE PERMS + restart TOR
     run_command(["chown", "tor:tor", torrc_path], "Setting torrc ownership")
     run_command(["chmod", "644", torrc_path], "Setting torrc permissions")
     run_command(["systemctl", "restart", "tor"], "Restarting TOR service")
 
-# lockdown browser 
+# LOCK BROWSER 
+# NEED TO ADD - rule if they want to run TOR browers but i do not recommend double tuneling. 
 def containerize_browser(browser="firefox"):
     """Run browser in an isolated Firejail sandbox."""
     print("[+] Sandboxing browser...")
     run_command(["apt", "install", "-y", "firejail"], "Installing Firejail")
     run_command(["firejail", "--private", browser], "Launching browser in sandbox")
 
-# locodown dir's
+# LOCK - dir's
 def sandbox_directories():
     """Prevent unauthorized modifications to critical directories."""
     critical_dirs = ["/var", "/lib", "/bin", "/sbin", "/root", "/boot"]
@@ -127,23 +129,23 @@ def sandbox_directories():
     for directory in critical_dirs:
         run_command(["firejail", f"--private={directory}"], f"Sandboxing {directory}")
 
-# Allow approved updates only but still need to enforce this in all 
+# UPDATES + APPR - Allow approved updates only but still need to enforce this in all 
 def enforce_signed_updates():
     """Only allow updates for whitelisted packages."""
     print("[+] Enforcing signed package updates...")
     whitelist_file = "/etc/apt/approved-packages.txt"
 
-    # be sure of whitelist exists
+    # WHITELIST - only
     if not os.path.exists(whitelist_file):
         print(f"[-] Package whitelist {whitelist_file} not found! Creating default.")
         with open(whitelist_file, "w") as f:
             f.write("tor\nsnowflake-client\nfirejail\n")  # Example default packages
 
-    # update but only approved ones 
+   
     run_command(["apt-get", "update"])
     run_command(["apt-get", "install", "--only-upgrade", f"$(cat {whitelist_file})"], "Applying approved updates")
 
-# Redirect downloads > focused directory
+# REDIRECT> focused directory /var
 def redirect_web_downloads(directory="/var/locked_downloads"):
     """Redirect and log all web-based downloads for inspection."""
     print(f"[+] Redirecting web downloads to {directory}...")
@@ -153,7 +155,7 @@ def redirect_web_downloads(directory="/var/locked_downloads"):
 
     print("[+] Download logging enabled.")
 
-# Execute full 
+# MAIN
 def hardn_qube_lockdown():
     """Execute full system lockdown with all protections."""
     configure_ufw()
@@ -163,6 +165,6 @@ def hardn_qube_lockdown():
     enforce_signed_updates()
     redirect_web_downloads()
 
-# Main file
+
 if __name__ == "__main__":
     hardn_qube_lockdown()

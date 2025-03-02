@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# HARDN_DARK - Deep Security... the better way 
+# HARDN_DARK
 import os
 import shutil
 import subprocess
@@ -51,7 +51,7 @@ def restore_backups():
                 backup_file = os.path.join(root, file)
                 shutil.move(backup_file, original_file)
                 log(f"[+] Restored: {original_file}")
-
+# check system comp
 def check_compatibility():
     """Check if the system is Debian-based"""
     try:
@@ -73,7 +73,7 @@ def disable_core_dumps(test_mode=False):
     backup_file("/etc/security/limits.conf", test_mode)
     run_command("echo '* hard core 0' | sudo tee -a /etc/security/limits.conf > /dev/null", "Core dumps disabled", test_mode)
 
-# removed tdp wrappers here becasue its in main file
+# removed tcp wrappers here becasue its in main file (hardn.py)
 
 def restrict_non_local_logins(test_mode=False):
     """Restrict non-local logins except SSH"""
@@ -84,7 +84,7 @@ def restrict_non_local_logins(test_mode=False):
     else:
         log("[-] /etc/security/access.conf does not exist. Skipping.")
 
-def secure_files(test_mode=False):
+def secure_files(test_mode=False): # sandbox dir
     """Secure critical system files"""
     log("[+] Securing system configuration files...")
     files_to_secure = [
@@ -100,7 +100,7 @@ def secure_files(test_mode=False):
         else:
             log(f"[-] {file} does not exist. Skipping.")
 
-def setup_cron_job(): # needed...
+def setup_cron_job(): # daily
     """Setup cron job to run HARDN DARK daily"""
     log("[+] Configuring automatic security hardening cron job...")
     cron_job = f"0 3 * * * /usr/bin/python3 {os.path.abspath(__file__)} >> /var/log/hardn_cron.log 2>&1"
@@ -112,13 +112,13 @@ def setup_cron_job(): # needed...
     else:
         log("[+] Cron job already exists. Skipping.")
 
-def disable_usb_storage(test_mode=False):
-    """Disable USB storage devices"""
-    log("[+] Disabling USB storage devices...")
-    usb_rule = "/etc/modprobe.d/usb-storage.conf"
-    backup_file(usb_rule, test_mode)
-    run_command("echo 'blacklist usb-storage' | sudo tee /etc/modprobe.d/usb-storage.conf > /dev/null", "USB storage blocked", test_mode)
-    run_command("modprobe -r usb-storage", "Unloaded USB storage module", test_mode)
+#def disable_usb_storage(test_mode=False):
+ #   """Disable USB storage devices"""
+  #  log("[+] Disabling USB storage devices...")
+   # usb_rule = "/etc/modprobe.d/usb-storage.conf"
+    #backup_file(usb_rule, test_mode)
+    r#un_command("echo 'blacklist usb-storage' | sudo tee /etc/modprobe.d/usb-storage.conf > /dev/null", "USB storage blocked", test_mode)
+    #run_command("modprobe -r usb-storage", "Unloaded USB storage module", test_mode)
 
 def restrict_su_command(test_mode=False):
     """Restrict su command to only admin group members"""
@@ -154,10 +154,10 @@ def main():
 
     check_compatibility()
     disable_core_dumps(test_mode)
-    configure_tcp_wrappers(test_mode)
+    # configure_tcp_wrappers(test_mode)
     restrict_non_local_logins(test_mode)
     secure_files(test_mode)
-    disable_usb_storage(test_mode)
+    # disable_usb_storage(test_mode)
     restrict_su_command(test_mode)
     restart_services(test_mode)
     setup_cron_job()
