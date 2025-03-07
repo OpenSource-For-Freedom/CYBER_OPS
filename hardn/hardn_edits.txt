@@ -1,4 +1,4 @@
-# HARDN.py - Fixes after someone built a website and callwd us out publicly. 
+# HARDN.py - Fixes 
 # WE will always enjoy feedback, testing and input. 
 ### Add Required Imports
 # Line 1: Add additional imports for security improvements
