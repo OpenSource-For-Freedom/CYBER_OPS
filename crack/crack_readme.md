@@ -37,5 +37,5 @@ To use this script, clone this repository or copy the script to your local machi
 	•	Always ensure you have explicit permission to test the network.
 	•	The script defaults to using wlan0 as the network interface. If your interface name is different, you will need to modify the script accordingly.
 
-##Contributing
-please do
+## Contributing
+Contact directly or Fork 
