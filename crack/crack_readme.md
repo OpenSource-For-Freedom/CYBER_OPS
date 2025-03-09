@@ -12,13 +12,13 @@ Prerequisites
 
 To use this script, clone this repository or copy the script to your local machine. Make sure the script has executable permissions:
 
-> chmod +x network_test.sh
+> chmod +x crack.py
 
 # Usage
 
 ## Run the script from terminal:
 
-> ./network_test.sh
+> ./crack.py
 
 ## Follow the interactive prompts to enter the necessary information such as the SSID, BSSID, and channel of the network you are testing.
 
