@@ -1,3 +1,51 @@
+Src/ Directory:
+
+hardn.py: The main orchestration script that provides the GUI and coordinates the execution of various tasks.
+
+packages.py: Contains functions to install and configure security packages. Ensures all necessary tools are present and correctly set up.
+
+HARDN_dark.py: Implements system lockdown procedures and manages Docker container deployment. Enhances system security and isolates applications within containers.
+
+utils.py: Provides utility functions shared across different modules, such as executing commands and running audits.
+
+Dockerfile: Defines the Docker image that encapsulates the entire application. Manages updates, monitoring, and system management through malware scanners.
+
+Workflow Summary
+
+Initialization:
+
+hardn.py ensures the script runs with root privileges.
+
+The GUI is initialized to provide real-time status updates.
+
+Dependency and Package Management:
+
+packages.py checks and installs required security tools.
+
+Functions like configure_apparmor and configure_firejail are called to set up specific security measures.
+
+System Lockdown and Container Deployment:
+
+HARDN_dark.py performs system lockdown by configuring UFW and setting up Docker.
+
+Deploys containers to encapsulate applications securely.
+
+Monitoring and Updates:
+
+The Docker image manages package updates and system monitoring using tools like LMD and cron jobs.
+
+Future plans include integrating Legion.c for enhanced malware scanning.
+
+Execution:
+
+The entire process runs headless, providing a secure and isolated environment for the application.
+
+
+
+
+
+
+
 # Project Overview
 
 ## HARDN (Orchestration)
