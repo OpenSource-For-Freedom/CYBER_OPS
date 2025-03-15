@@ -33,8 +33,7 @@ def print_ascii_art():
                          License: MIT License
                             Version: 1.1.1
                            Dev: Tim "TANK" Burns
-      GitHub: https://github.com/OpenSource-For-Freedom/Linux.git
-"""
+      
 print(art)
 # Validate IPv4 Address
 def is_valid_ip(ip):
