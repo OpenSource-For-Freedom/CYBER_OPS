@@ -1,0 +1,37 @@
+HARDN/
+├── debian/                      # Debian packaging folder
+│   ├── changelog                # Debian changelog
+│   ├── compat                   # Debhelper compatibility level
+│   ├── control                  # Package metadata
+│   ├── install                  # Install instructions (e.g., src/hardn.py usr/bin/)
+│   └── rules                    # Build rules (makefile style, executable)
+│
+├── docker/                      # Docker support files
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── packages.py
+│
+├── docs/                        # Documentation files
+│   ├── LICENSE
+│   ├── README.md
+│   └── hardn_wkflw.md
+│
+├── src/                         # Source code
+│   ├── hardn.py                 # Main entry script
+│   ├── kernal.py                # Core functionality
+│   ├── __init__.py
+│   └── setup/                   # Install scripts and Python package configs
+│       ├── .gitignore
+│       ├── Setup.sh
+│       ├── packages.sh
+│       ├── pyproject.toml
+│       └── requirements.txt
+│
+├── .github/                     # GitHub Actions CI/CD workflows
+│   └── workflows/
+│       └── deb-build.yml        # Builds and tests .deb package on push
+│
+├── Dockerfile.build             # Optional: reproducible Docker build environment
+├── LICENSE                      # Project license
+├── Makefile                     # Build and install automation
+└── README.md                    # Main project description
