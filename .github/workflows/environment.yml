@@ -1,13 +1,1 @@
-name: hardn
-dependencies:
-  - python=3.10
-  - numpy
-  - scipy
-  - pandas
-  - requests
-  - pip
-  - pip:
-      - pytest
-      - bandit
-      - safety
-      - codecov
+# none
