@@ -14,7 +14,7 @@ LOG_FILE="/var/log/reverse_shell_watch.log"
 
 echo "[$(date)] Running reverse shell scan..." >> $LOG_FILE
 
-# Kill bash shells via /dev/tcp
+
 for pid in $(ps aux | grep '[b]ash -i' | grep '/dev/tcp' | awk '{print $2}'); do
     echo "[$(date)] Killing suspicious bash reverse shell: PID $pid" >> $LOG_FILE
     kill -9 "$pid"
