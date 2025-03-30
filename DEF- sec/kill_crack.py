@@ -3,6 +3,10 @@ import argparse
 import tkinter as tk
 from tkinter import messagebox
 
+
+# install must have python3 and venv already running 
+pip install scapy
+
 # handle packets
 def packet_handler(packet):
     if packet.haslayer(Dot11Deauth):
