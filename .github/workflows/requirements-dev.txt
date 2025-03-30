@@ -1,8 +1,0 @@
-pytest
-pytest-cov
-bandit
-safety
-black
-flake8
-mypy
-codecov
