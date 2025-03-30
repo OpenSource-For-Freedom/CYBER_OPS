@@ -1,14 +1,12 @@
-<p align="center" style="text-shadow: 2px 2px 4px #000000;">
-```
-██      ██ ███    ██ ██    ██ ██   ██  
-██      ██ ████   ██ ██    ██  ██ ██  
-██      ██ ██ ██  ██ ██    ██   ███   
-██      ██ ██  ██ ██ ██    ██  ██ ██  
-███████ ██ ██   ████  ██████  ██   ██  
-
-<-p>
-```
-
+<p align="center">
+  <pre>
+  ██      ██ ███    ██ ██    ██ ██   ██  
+  ██      ██ ████   ██ ██    ██  ██ ██  
+  ██      ██ ██ ██  ██ ██    ██   ███   
+  ██      ██ ██  ██ ██ ██    ██  ██ ██  
+  ███████ ██ ██   ████  ██████  ██   ██  
+  </pre>
+</p>
 
 This directory contains resources and tools for OFFSEC and DEFSEC operations in Linux environments. Use these files to enhance security assessments and defense strategies.
 
