@@ -8,7 +8,7 @@
   </pre>
 </p>
 
-This directory contains resources and tools for OFFSEC and DEFSEC operations in Linux environments. Use these files to enhance security assessments and defense strategies.
+This directory contains resources and tools for OFFSEC and DEFSEC operations in Linux environments. 
 
 - **Scripts**: Automate tasks for offensive and defensive operations.
 - **Configs**: Predefined settings for secure system configurations.
@@ -18,6 +18,3 @@ This directory contains resources and tools for OFFSEC and DEFSEC operations in 
 - **VERIFY**: Utilities for verifying Netowrk access, vulernailites and prints a report. 
 - **KILL_SHELL**: Scripts to terminate unauthorized shell sessions using rust, and stops the attack, runs every 30 minutes using multi-threading and quiet mode. 
 =======
-# Non-Production REPO
->>>>>>> 76eca11420a459a8fe28087b9eeefea53f520343
-
