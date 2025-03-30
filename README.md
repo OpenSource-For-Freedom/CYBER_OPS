@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ```markdown
 <p align="center" style="text-shadow: 2px 2px 4px #000000;">
 
@@ -21,7 +20,5 @@ This directory contains resources and tools for OFFSEC and DEFSEC operations in 
 - **CRACK**: Tools and scripts for password cracking and hash analysis over WPA2 wifi.
 - **VERIFY**: Utilities for verifying Netowrk access, vulernailites and prints a report. 
 - **KILL_SHELL**: Scripts to terminate unauthorized shell sessions using rust, and stops the attack, runs every 30 minutes using multi-threading and quiet mode. 
-=======
 # Non-Production REPO
->>>>>>> 76eca11420a459a8fe28087b9eeefea53f520343
 
