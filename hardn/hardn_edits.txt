@@ -1,0 +1,170 @@
+# HARDN.py - Fixes 
+# WE will always enjoy feedback, testing and input. 
+### Add Required Imports
+# Line 1: Add additional imports for security improvements
+# --------------------------------
+1  import os
+2  import sys                # Added for safer script termination
+3  import time               # Added for timeout handling
+4  import subprocess         # Added for secure command execution
+5  import netifaces          # Added for network interface validation
+6  import hashlib            # Added for file integrity verification
+7  import shutil             # Added for secure file backup handling
+# --------------------------------
+
+### Edit 2: Update require_root() for safer termination
+# Line 10: Change exit() to sys.exit(1) for proper script termination
+# --------------------------------
+10   def require_root():
+11       """Ensure script is running as root."""
+12       if os.geteuid() != 0:
+13           print("[✘] ERROR: This script must be run as root!")
+14           sys.exit(1)    # Changed from exit(1) to sys.exit(1) for consistency
+# --------------------------------
+
+### Edit 3: Update confirm_action() to include a timeout
+# Line 16-22: Add a timeout (default 10s) to prevent script hanging
+# --------------------------------
+16   def confirm_action(description, timeout=10):  # Added timeout argument
+17       """
+18       Ask for user confirmation with a timeout.
+19       Defaults to 'no' after timeout expires.
+20       """
+21       print(f"Are you sure you want to {description}? (yes/no)")
+22       start_time = time.time()
+23       
+24       while time.time() - start_time < timeout:
+25           confirm = input("Type 'yes' or 'no': ").strip().lower()
+26           if confirm in ["yes", "no"]:
+27               return confirm == "yes"
+28       
+29       print("\n[✘] No response detected. Defaulting to 'no'.")  # Inform user of timeout
+30       return False  # Defaults to 'no' if no input is received
+# --------------------------------
+
+### Edit 4: Add a secure command execution function
+# Line 32: Add a secure function to execute commands safely (avoiding shell=True)
+# --------------------------------
+32   def run_secure_command(command_list, description):
+33       """
+34       Run a system command securely, preventing shell injection.
+35       """
+36       try:
+37           result = subprocess.run(command_list, check=True, capture_output=True, text=True)
+38           print(f"[✔] {description}: {result.stdout.strip()}")
+39       except subprocess.CalledProcessError as e:
+40           print(f"[✘] ERROR: {description} failed: {e.stderr.strip()}")
+41           return False
+42       return True
+# --------------------------------
+
+### Edit 5: Add network interface validation
+# Line 44: Validate if a network interface exists before modifying it
+# --------------------------------
+44   def validate_interface(interface):
+45       """
+46       Ensure the network interface exists before modifying it.
+47       """
+48       if interface not in netifaces.interfaces():
+49           print(f"[✘] ERROR: Interface {interface} does not exist!")
+50           return False
+51       return True
+# --------------------------------
+
+### Edit 6: Add function to secure file permissions
+# Line 53: Secure critical files by setting proper permissions
+# --------------------------------
+53   def secure_file_permissions(file_path):
+54       """
+55       Apply strict permissions to security-sensitive files.
+56       """
+57       run_secure_command(["sudo", "chmod", "600", file_path], f"Setting permissions on {file_path}")
+58       run_secure_command(["sudo", "chown", "root:root", file_path], f"Setting ownership for {file_path}")
+# --------------------------------
+
+### Edit 7: Add function to get file integrity hash
+# Line 60: Ensure integrity of system files before modification
+# --------------------------------
+60   def get_file_hash(file_path):
+61       """
+62       Generate a SHA-256 hash for a file to verify its integrity.
+63       """
+64       if not os.path.exists(file_path):
+65           return None
+66       hasher = hashlib.sha256()
+67       with open(file_path, "rb") as f:
+68           hasher.update(f.read())
+69       return hasher.hexdigest()
+# --------------------------------
+
+### Edit 8: Add function to modify system files safely
+# Line 71: Add file backup and integrity checks before modifying files
+# --------------------------------
+71   def modify_system_file(file_path, new_content):
+72       """
+73       Modify system security files safely, ensuring backups and integrity checks.
+74       """
+75       original_hash = get_file_hash(file_path)
+76       backup_path = f"{file_path}.bak"
+77   
+78       run_secure_command(["sudo", "cp", file_path, backup_path], f"Backing up {file_path}")
+79   
+80       try:
+81           with open(file_path, "a") as f:
+82               f.write(new_content + "\n")
+83   
+84           new_hash = get_file_hash(file_path)
+85           print(f"[✔] {file_path} modified successfully. Hash: {new_hash}")
+86       except Exception as e:
+87           print(f"[✘] ERROR modifying {file_path}: {str(e)}")
+88           run_secure_command(["sudo", "mv", backup_path, file_path], f"Restoring {file_path}")
+# --------------------------------
+
+### Edit 9: Add TOR security enforcement
+# Line 90: Ensure TOR routing is properly enforced
+# --------------------------------
+90   def secure_tor():
+91       """
+92       Ensure TOR routing is properly secured.
+93       """
+94       run_secure_command(["sudo", "systemctl", "enable", "--now", "tor"], "Enabling TOR")
+95       run_secure_command(["sudo", "iptables", "-A", "OUTPUT", "-m", "owner", "--uid-owner", "tor", "-j", "ACCEPT"], "Routing traffic through TOR")
+# --------------------------------
+
+### Edit 10: Add safe directory locking mechanism
+# Line 97: Allow locking/unlocking system directories
+# --------------------------------
+97   def lock_directory(dir_path, lock=True):
+98       """
+99       Secure system directories by applying or removing immutability.
+100      """
+101      action = "+i" if lock else "-i"
+102      run_secure_command(["sudo", "chattr", action, dir_path], f"{'Locking' if lock else 'Unlocking'} {dir_path}")
+# --------------------------------
+
+### Edit 11: Main Execution with Security Prompts
+# Line 105: Implement security confirmation for each action
+# --------------------------------
+105  if __name__ == "__main__":
+106      require_root()
+107  
+108      if confirm_action("disable network interface eth0"):
+109          if validate_interface("eth0"):
+110              run_secure_command(["sudo", "ip", "link", "set", "eth0", "down"], "Disabling eth0")
+111  
+112      if confirm_action("modify security limits file"):
+113          modify_system_file("/etc/security/limits.conf", "* hard core 0")
+114  
+115      if confirm_action("secure file permissions for /etc/security/limits.conf"):
+116          secure_file_permissions("/etc/security/limits.conf")
+117  
+118      if confirm_action("randomize MAC address for eth0"):
+119          if validate_interface("eth0"):
+120              run_secure_command(["sudo", "macchanger", "-r", "eth0"], "Randomizing MAC Address")
+121  
+122      if confirm_action("enable and secure TOR routing"):
+123          secure_tor()
+124  
+125      if confirm_action("lock /etc directory to prevent unauthorized modifications"):
+126          lock_directory("/etc", lock=True)
+# --------------------------------

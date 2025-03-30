@@ -9,6 +9,7 @@ from tkinter import messagebox, filedialog, ttk
 import sys
 import re
 
+<<<<<<< HEAD:OFF-sec/VeriFY/src/VeriFY.py
 # Display ASCII art in the GUI
 def display_ascii_art():
     ascii_art = """
@@ -26,6 +27,39 @@ def display_ascii_art():
     art_window.title("ASCII Art")
     art_label = tk.Label(art_window, text=ascii_art, font=("Courier", 10), justify="left")
     art_label.pack(padx=10, pady=10)
+=======
+
+# PRINT BANNER
+def print_ascii_art():
+    art = """
+           ██▒   █▓▓█████  ██▀███   ██▓  █████▒▓██   ██▓
+           ▓██░   █▒▓█   ▀ ▓██ ▒ ██▒▓██▒▓██   ▒  ▒██  ██▒
+           ▓██  █▒░▒███   ▓██ ░▄█ ▒▒██▒▒████ ░   ▒██ ██░
+           ▒██ █░░▒▓█  ▄ ▒██▀▀█▄  ░██░░▓█▒  ░   ░ ▐██▓░
+            ▒▀█░  ░▒████▒░██▓ ▒██▒░██░░▒█░      ░ ██▒▓░
+            ░ ▐░  ░░ ▒░ ░░ ▒▓ ░▒▓░░▓   ▒ ░       ██▒▒▒ 
+              ░ ░░   ░ ░  ░  ░▒ ░ ▒░ ▒ ░ ░       ▓██ ░▒░ 
+                ░░     ░     ░░   ░  ▒ ░ ░ ░     ▒ ▒ ░░  
+                 ░     ░  ░   ░      ░           ░ ░     
+                ░                                ░ ░     
+
+                "VeriFy" - The Network Security Project
+                ----------------------------------------
+                 A project focused on improving network
+                security by automating, containerizing
+                            Hardening and
+                     System protection measures.
+                         License: MIT License
+                            Version: 1.1.1
+                           Dev: Tim "TANK" Burns
+      
+print(art)
+# Validate IPv4 Address
+def is_valid_ip(ip):
+    pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    return re.match(pattern, ip) is not None
+
+>>>>>>> 76eca11420a459a8fe28087b9eeefea53f520343:VeriFY/VeriFY.py
 # Check Admin Privileges
 def check_admin():
     if os.geteuid() != 0:
