@@ -10,9 +10,7 @@
 
 This directory contains resources and tools for OFFSEC and DEFSEC operations in Linux environments. 
 
-- **Scripts**: Automate tasks for offensive and defensive operations.
-- **Configs**: Predefined settings for secure system configurations.
-- **Docs**: Guides and references for Linux security practices.
+## This repo is for Red Team - Blue team Op's
 
 - **CRACK**: Tools and scripts for password cracking and hash analysis over WPA2 wifi.
 - **VERIFY**: Utilities for verifying Netowrk access, vulernailites and prints a report. 
