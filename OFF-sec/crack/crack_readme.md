@@ -1,5 +1,13 @@
 # Network Security Testing Script
 
+<p align="center">
+	 ▄▄· ▄▄▄   ▄▄▄·  ▄▄· ▄ •▄ <br>
+	▐█ ▌▪▀▄ █·▐█ ▀█ ▐█ ▌▪█▌▄▌▪<br>
+	██ ▄▄▐▀▀▄ ▄█▀▀█ ██ ▄▄▐▀▀▄·<br>
+	▐███▌▐█•█▌▐█ ▪▐▌▐███▌▐█.█▌<br>
+	·▀▀▀ .▀  ▀ ▀  ▀ ·▀▀▀ ·▀  ▀
+</p>
+
 This Bash script is designed to assist in testing the security of wireless networks. It is crucial that this tool is used ethically and legally, with explicit permission from the network owner.
 
 Prerequisites

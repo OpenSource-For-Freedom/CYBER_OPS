@@ -9,16 +9,43 @@ from tkinter import messagebox, filedialog, ttk
 import sys
 import re
 
-# Validate IPv4 Address
-def is_valid_ip(ip):
-    pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
-    return re.match(pattern, ip) is not None
-
+# Display ASCII art in the GUI
+def display_ascii_art():
+    ascii_art = """
+ ▄█    █▄     ▄████████    ▄████████  ▄█     ▄████████ ▄██   ▄   
+███    ███   ███    ███   ███    ███ ███    ███    ███ ███   ██▄ 
+███    ███   ███    █▀    ███    ███ ███▌   ███    █▀  ███▄▄▄███ 
+███    ███  ▄███▄▄▄      ▄███▄▄▄▄██▀ ███▌  ▄███▄▄▄     ▀▀▀▀▀▀███ 
+███    ███ ▀▀███▀▀▀     ▀▀███▀▀▀▀▀   ███▌ ▀▀███▀▀▀     ▄██   ███ 
+███    ███   ███    █▄  ▀███████████ ███    ███        ███   ███ 
+███    ███   ███    ███   ███    ███ ███    ███        ███   ███ 
+ ▀██████▀    ██████████   ███    ███ █▀     ███         ▀█████▀  
+                          ███    ███        
+"""
+    art_window = tk.Toplevel()
+    art_window.title("ASCII Art")
+    art_label = tk.Label(art_window, text=ascii_art, font=("Courier", 10), justify="left")
+    art_label.pack(padx=10, pady=10)
 # Check Admin Privileges
 def check_admin():
     if os.geteuid() != 0:
         tk.messagebox.showerror("Error", "Must run as Higher.")
         sys.exit(1)
+
+        # build python venv
+def build_venv():
+    os.system('python3 -m venv venv')
+    os.system('source venv/bin/activate')
+    os.system('pip install -r requirements.txt')
+    os.system('pip install pythonping')
+    os.system('pip install python-nmap')
+    os.system('pip install dpkt')        
+
+
+# Validate 
+def is_valid_ip(ip):
+    pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    return re.match(pattern, ip) is not None
 
 # Ping Target
 def ping_target(ip_address):
@@ -32,12 +59,14 @@ def ping_target(ip_address):
         tk.messagebox.showerror("Ping Error", str(e))
         return False
 
-# Run Nmap Scan
-def run_nmap_scan(ip_address, output_dir, status_label):
+# Run 
+def run_nmap_scan(ip_address, output_dir, status_label=None):
+    if status_label is None:
+        status_label = tk.Label() 
     try:
         nm = nmap.PortScanner()
-        scan_args = "nmap -sS -Pn -T4 -A -p- 22,80,443,8080 --randomize-hosts"
-"
+        status_label.config(text="Running Nmap scan...")
+        nm.scan(hosts=ip_address, arguments=scan_args)
         status_label.config(text="Running Nmap scan...")
         nm.scan(hosts=ip_address, arguments=scan_args)
         
@@ -59,7 +88,7 @@ def run_nmap_scan(ip_address, output_dir, status_label):
     except Exception as e:
         tk.messagebox.showerror("Nmap Scan Error", str(e))
 
-# Analyze Packets
+# Analyze
 def analyze_packets(pcap_file, output_dir, status_label):
     packets_data = []
     try:
@@ -85,7 +114,7 @@ def analyze_packets(pcap_file, output_dir, status_label):
     except Exception as e:
         tk.messagebox.showerror("Packet Analysis Error", str(e))
 
-# Start Scan Process
+# Start 
 def start_scan(target_ip, output_dir, status_label):
     if not target_ip or not is_valid_ip(target_ip):
         tk.messagebox.showerror("Input Error", "Please provide a valid target IP address.")

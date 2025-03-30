@@ -1,5 +1,13 @@
 #!/bin/bash
 
+echo "
+ ▄▄· ▄▄▄   ▄▄▄·  ▄▄· ▄ •▄ 
+▐█ ▌▪▀▄ █·▐█ ▀█ ▐█ ▌▪█▌▄▌▪
+██ ▄▄▐▀▀▄ ▄█▀▀█ ██ ▄▄▐▀▀▄·
+▐███▌▐█•█▌▐█ ▪▐▌▐███▌▐█.█▌
+·▀▀▀ .▀  ▀ ▀  ▀ ·▀▀▀ ·▀  ▀
+"
+
 # Ask for the SSID
 read -p "Enter the SSID of the network you have permission to test: " SSID
 

@@ -1,0 +1,4 @@
+# Core dependencies
+pythonping
+python-nmap
+dpkt
