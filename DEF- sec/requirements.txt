@@ -1,1 +1,3 @@
 # reqs for kill_crack
+scapy
+tkinter
