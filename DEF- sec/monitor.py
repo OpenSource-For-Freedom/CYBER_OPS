@@ -1,89 +1,45 @@
-
-
-if [ "$(id -u)" -ne 0 ]; then
-  echo "This script must be run as root!"
-  exit 1
-fi
-
-
-VENV_DIR="/path/to/your/venv"
-REQUIREMENTS_FILE="/path/to/requirements.txt"
-RUN_MONITORS_SCRIPT="/path/to/run_monitors.py"
-KILL_VERIFY_SCRIPT="/path/to/kill_VeriFY.py"
-KILL_CRACK_SCRIPT="/path/to/kill_crack.py"
-CRON_LOG="/path/to/install_dependencies.log"
-INSTALL_DEPENDENCIES_SCRIPT="/path/to/install_dependencies.sh"
-
-
-install_packages() {
-  if [ -f /etc/debian_version ]; then
-    # Debian-based OS
-    apt-get update
-    apt-get install -y python3 python3-venv python3-pip
-  elif [ -f /etc/redhat-release ]; then
-    # RHEL-based OS
-    yum update -y
-    yum install -y python3 python3-venv python3-pip
-  else
-    echo "Unsupported OS"
-    exit 1
-  fi
-}
-
-
-install_packages
-
-
-if [ ! -d "$VENV_DIR" ]; then
-  python3 -m venv $VENV_DIR
-fi
-
-source $VENV_DIR/bin/activate
-
-
-pip install -r $REQUIREMENTS_FILE
-
-
-cat <<EOL > $RUN_MONITORS_SCRIPT
 import subprocess
-import os
-import sys
+import tkinter as tk
+from tkinter import scrolledtext
+import threading
 
-def check_root():
-    if os.geteuid() != 0:
-        print("This script must be run as root!")
-        sys.exit(1)
 
-def run_script(script_name):
-    subprocess.Popen(['python3', script_name])
+def run_bash_script(script_path, log_path):
+    with open(log_path, "w") as log_file:
+        process = subprocess.Popen(['bash', script_path], stdout=log_file, stderr=log_file)
+        process.wait()
+
+
+def update_log_display(log_path, text_widget):
+    with open(log_path, "r") as log_file:
+        log_content = log_file.read()
+    text_widget.config(state=tk.NORMAL)
+    text_widget.delete(1.0, tk.END)
+    text_widget.insert(tk.INSERT, log_content)
+    text_widget.config(state=tk.DISABLED)
+
+
+def run_and_display_logs(script_path, log_path, text_widget):
+    threading.Thread(target=run_bash_script, args=(script_path, log_path)).start()
+    threading.Thread(target=update_log_display, args=(log_path, text_widget)).start()
+
+
+def create_gui(script_path, log_path):
+    root = tk.Tk()
+    root.title("Monitor Logs")
+
+    frame = tk.Frame(root)
+    frame.pack(padx=10, pady=10)
+
+    text_widget = scrolledtext.ScrolledText(frame, width=80, height=20, state=tk.DISABLED)
+    text_widget.pack(padx=10, pady=10)
+
+    button = tk.Button(frame, text="Run Monitors", command=lambda: run_and_display_logs(script_path, log_path, text_widget))
+    button.pack(pady=10)
+
+    root.mainloop()
 
 if __name__ == "__main__":
-    check_root()
-    
-    kill_verify_script = '$KILL_VERIFY_SCRIPT'
-    kill_crack_script = '$KILL_CRACK_SCRIPT'
-
-    run_script(kill_verify_script)
-    run_script(kill_crack_script)
-
-    print("Both kill_VeriFY.py and kill_crack.py are running in the background.")
-EOL
-
-
-cat <<EOL > $INSTALL_DEPENDENCIES_SCRIPT
-#!/bin/bash
-
-source $VENV_DIR/bin/activate
-pip install -r $REQUIREMENTS_FILE
-python3 $RUN_MONITORS_SCRIPT
-EOL
-
-chmod +x $INSTALL_DEPENDENCIES_SCRIPT
-
-# Setup cron job
-(crontab -l ; echo "0 * * * * $INSTALL_DEPENDENCIES_SCRIPT >> $CRON_LOG 2>&1") | crontab -
-
-
-$INSTALL_DEPENDENCIES_SCRIPT
-
-echo "Setup complete. Cron job has been configured to run the monitors every hour."
+    script_path = "/path/to/run_monitors.sh"
+    log_path = "/path/to/monitor.log"
+    create_gui(script_path, log_path)
