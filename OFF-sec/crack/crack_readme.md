@@ -1,11 +1,14 @@
-# Network Security Testing Script
+# WPA2 Security Testing Script
 
 <p align="center">
-	 ▄▄· ▄▄▄   ▄▄▄·  ▄▄· ▄ •▄ <br>
-	▐█ ▌▪▀▄ █·▐█ ▀█ ▐█ ▌▪█▌▄▌▪<br>
-	██ ▄▄▐▀▀▄ ▄█▀▀█ ██ ▄▄▐▀▀▄·<br>
-	▐███▌▐█•█▌▐█ ▪▐▌▐███▌▐█.█▌<br>
-	·▀▀▀ .▀  ▀ ▀  ▀ ·▀▀▀ ·▀  ▀
+  <pre>
+██████╗██████╗  █████╗  ██████╗██╗  ██╗
+██╔════╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝
+██║     ██████╔╝███████║██║     █████╔╝ 
+██║     ██╔══██╗██╔══██║██║     ██╔═██╗ 
+╚██████╗██║  ██║██║  ██║╚██████╗██║  ██╗
+ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+  </pre>
 </p>
 
 This Bash script is designed to assist in testing the security of wireless networks. It is crucial that this tool is used ethically and legally, with explicit permission from the network owner.
