@@ -17,6 +17,6 @@ This directory contains resources and tools for OFFSEC and DEFSEC operations in 
 ## This repo is for Red Team - Blue team Op's
 
 - **CRACK**: Tools and scripts for password cracking and hash analysis over WPA2 wifi.
-- **VERIFY**: Utilities for verifying Netowrk access, vulernailites and prints a report. 
+- **VERIFY**: Utilities for verifying Netowrk access, vulnerabilities and prints a report. 
 - **KILL_SHELL**: Scripts to terminate unauthorized shell sessions using rust, and stops the attack, runs every 30 minutes using multi-threading and quiet mode. 
 =======
