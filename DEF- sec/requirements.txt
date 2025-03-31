@@ -1,3 +1,8 @@
 # reqs for kill_crack
 scapy
 tkinter
+
+# resp for kill_verify
+psutil
+tkinter
+python-daemon
