@@ -1,18 +1,18 @@
 <p align="center">
-        <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/HARDN.png" alt="HARDN Logo" />
+    <img src="https://github.com/OpenSource-For-Freedom/HARDN/blob/Primary/Docs/HARDN.png" alt="HARDN Logo" />
 </p>
 
-<p align="center">
-  <pre>
-  ██      ██ ███    ██ ██    ██ ██   ██  
-  ██      ██ ████   ██ ██    ██  ██ ██  
-  ██      ██ ██ ██  ██ ██    ██   ███   
-  ██      ██ ██  ██ ██ ██    ██  ██ ██  
-  ███████ ██ ██   ████  ██████  ██   ██  
-  </pre>
-</p>
-
+<div align="center">
+    <pre>
+ :::      ::: :::= === :::  === :::  ===
+ :::      ::: :::===== :::  === :::  ===
+ ===      === ======== ===  ===  ====== 
+ ===      === === ==== ===  ===  ====== 
+ ======== === ===  ===  ======  ===  ===
+<pre> </pre>
 This directory contains resources and tools for OFFSEC and DEFSEC operations in Linux environments. 
+
+</div>
 
 If youre staring in an early role and your goal is "Red Team" start at the bottom.
 
