@@ -14,6 +14,17 @@
 
 This directory contains resources and tools for OFFSEC and DEFSEC operations in Linux environments. 
 
+If youre staring in an early role and your goal is "Red Team" start at the bottom.
+
+- Learn Documentation 
+- Learn OSINT
+- Learn Command
+- Learn nmap
+- Learn nikto
+- Learn Hashcat
+... but above all
+- Learn.... **LINUX**
+
 ## This repo is for Red Team - Blue team Op's
 
 ## R  E  D    T  E  A  M
