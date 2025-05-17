@@ -1,14 +1,18 @@
-
-
 <div align="center">
     <pre>
+
+![Think Like A Hacker](IMG_0821.jpeg)
+
+
  :::      ::: :::= === :::  === :::  ===
  :::      ::: :::===== :::  === :::  ===
  ===      === ======== ===  ===  ====== 
  ===      === === ==== ===  ===  ====== 
  ======== === ===  ===  ======  ===  ===
+
+ 
 <pre> </pre>
-This directory contains resources and tools for OFFSEC and DEFSEC operations in Linux environments. 
+**A Repo for both Defense and Attack**
 
 </div>
 
