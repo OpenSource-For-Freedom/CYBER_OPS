@@ -4,12 +4,12 @@
 
 # runs the bckgrnd as a service. 
 
+#!/usr/bin/env python3
+
 import os
 import sys
 import subprocess
 import shutil
-import signal
-import time
 
 INSTALL_PATH = "/usr/local/bin/kill_verify.py"
 SERVICE_PATH = "/etc/systemd/system/kill_verify.service"
@@ -79,6 +79,19 @@ import signal
 SCRIPT_NAME = os.path.realpath(__file__)
 QUARANTINE_DIR = "{QUARANTINE_DIR}"
 
+def print_banner():
+    banner = r"""
+ ___  __    ___  ___       ___               ___      ___ _______   ________  ___  ________ ___    ___ 
+|\  \|\  \ |\  \|\  \     |\  \             |\  \    /  /|\  ___ \ |\   __  \|\  \|\  _____\\  \  /  /|
+\ \  \/  /|\ \  \ \  \    \ \  \            \ \  \  /  / | \   __/|\ \  \|\  \ \  \ \  \__/\ \  \/  / /
+ \ \   ___  \ \  \ \  \    \ \  \            \ \  \/  / / \ \  \_|/_\ \   _  _\ \  \ \   __\\ \    / / 
+  \ \  \\ \  \ \  \ \  \____\ \  \____        \ \    / /   \ \  \_|\ \ \  \\  \\ \  \ \  \_| \/  /  /  
+   \ \__\\ \__\ \__\ \_______\ \_______\       \ \__/ /     \ \_______\ \__\\ _\\ \__\ \__\__/  / /    
+    \|__| \|__|\|__|\|_______|\|_______|        \|__|/       \|_______|\|__|\|__|\|__|\|__|\___/ /     
+                                                                                          \|___|/      
+"""
+    print(banner)
+
 def show_alert(message):
     try:
         if os.environ.get("DISPLAY"):
@@ -112,7 +125,7 @@ def quarantine_shells():
                 for name in files:
                     if name in ["reverse_shell.sh", "rev.sh", "rshell.py"]:
                         full = os.path.join(root, name)
-                        new_name = os.path.join(QUARANTINE_DIR, f"quarantine_{os.path.basename(full)}")
+                        new_name = os.path.join(QUARANTINE_DIR, f"quarantine_{{os.path.basename(full)}}")
                         shutil.move(full, new_name)
                         suspicious.append(full)
         except:
@@ -142,7 +155,6 @@ def set_monitor_mode(interface):
     subprocess.run(["ip", "link", "set", interface, "up"], check=True)
 
 def get_available_interface():
-    from scapy.all import conf
     return next((iface for iface in conf.ifaces.data.keys() if not str(iface).startswith(("lo", "docker"))), None)
 
 def start_sniffing(interface):
@@ -174,6 +186,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     if args.no_daemon:
+        print_banner()
         check_root()
         iface = args.interface or get_available_interface()
         if iface:
