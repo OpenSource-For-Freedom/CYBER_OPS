@@ -16,7 +16,7 @@
 
 </div>
 
-If youre staring in an early role and your goal is "Red Team" start at the bottom.
+If youre starting in an early role and your goal is "Red Team" start at the bottom.
 
 - Learn Documentation 
 - Learn OSINT
