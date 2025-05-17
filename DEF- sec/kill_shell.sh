@@ -1,6 +1,8 @@
 #!/bin/bash
 # Print ASCII banner
 
+# run persist: sudo bash kill_shell.sh --systemctl
+
 
 
 echo "
