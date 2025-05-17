@@ -28,7 +28,7 @@ If youre starting in an early role and your goal is "Red Team" start at the bott
 - Learn.... **LINUX**
 
 ## This repo is for Red Team - Blue team Op's
-
+### **Currently Under Development**
 ## R  E  D    T  E  A  M
 - **CRACK**: Tools and scripts for password cracking and hash analysis over WPA2 wifi.
 - **VERIFY**: Utilities for verifying Netowrk access, vulnerabilities and prints a report.
