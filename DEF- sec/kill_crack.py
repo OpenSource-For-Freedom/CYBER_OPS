@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# to run: sudo python3 kill_crack.py wlan0
+
+
 import os
 import time
 import argparse
