@@ -1,8 +1,36 @@
-# reqs for kill_crack
-scapy
-tkinter
+# core 
 
-# resp for kill_verify
-psutil
-tkinter
-python-daemon
+scapy==2.5.0               # For WIDS and packet sniffing
+tk                         # GUI alerts for attacks (bundled with Python, no pip install)
+argparse                   # Standard, included with Python
+threading                  # Standard, included with Python
+
+
+
+
+
+# kill_verify.py
+psutil==5.9.8              # Process and system utilities
+requests==2.31.0           # HTTP requests for external checks
+colorama==0.4.6            # Terminal color formatting
+pyfiglet==1.0.2            # ASCII banners
+tabulate==0.9.0            # For pretty-printed tables
+
+
+
+
+# Optional system tools integration
+pyudev==0.24.1            
+
+# kill_shell.py (Rust integration is assumed to be compiled separately)
+# Note: Rust dependencies are handled via Cargo.toml
+
+
+
+
+# Logging and security 
+loguru==0.7.2              # Clean logging
+watchdog==4.0.0            # File/directory monitoring 
+
+# For downloading or installing tools via script
+sh==2.0.6                  # Pythonic shell command wrapper
