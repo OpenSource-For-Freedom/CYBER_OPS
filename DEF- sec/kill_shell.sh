@@ -1,5 +1,8 @@
 #!/bin/bash
-# Print an ASCII banner
+# Print ASCII banner
+
+
+
 echo "
   _  _____ _    _      ___ _  _ ___ _    _    
  | |/ /_ _| |  | |    / __| || | __| |  | |   
@@ -9,26 +12,60 @@ echo "
 A REVERSE SHELL DETECTION & PREVENTION SCRIPT
 "
 
-# Log file to store detected reverse shell attempts
-LOG_FILE="/var/log/reverse_shell_attempts.log"
 
-# RUST directory scanning - multithreading
+
+
+
+if [[ "$1" == "--help" ]]; then
+    echo -e "Usage: $0 [--cron | --systemctl | --help]"
+    echo -e "  --cron        Run scan and detection once (used by cron)"
+    echo -e "  --systemctl   Install and start as a persistent systemd service"
+    echo -e "  --help        Show this help message"
+    exit 0
+fi
+
+
+
+
+
+LOG_FILE="/var/log/reverse_shell_attempts.log"
+LOG_MAX=1000
+
+
+
+
+
+
+install_dependencies() {
+    REQUIRED_PKGS=(rustc iproute2 iptables awk cut tail wc grep cron)
+
+    echo "[*] Checking and installing missing dependencies..."
+    for pkg in "${REQUIRED_PKGS[@]}"; do
+        if ! dpkg -s "$pkg" &>/dev/null; then
+            echo "[+] Installing: $pkg"
+            apt-get update -y && apt-get install -y "$pkg"
+        else
+            echo "[OK] $pkg is already installed."
+        fi
+    done
+}
+
+
 RUST_CODE=$(cat <<'EOF'
 use std::fs;
-use std::io::{self, Write};
-use std::path::Path;
+use std::env;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::process::Command;
 
 fn main() {
-    // Ensure the program is running as root
     if !is_root() {
         eprintln!("This program must be run as root.");
         std::process::exit(1);
     }
 
-    let dir_to_scan = "/tmp"; // Directory to scan for suspicious files
+    let args: Vec<String> = env::args().collect();
+    let dir_to_scan = args.get(1).unwrap_or(&"/tmp".to_string());
     let suspicious_patterns = ["bash", "sh", "nc", "perl", "python", "php"];
     let (tx, rx) = channel();
 
@@ -42,12 +79,11 @@ fn main() {
                         if let Ok(content) = fs::read_to_string(&path) {
                             for pattern in &suspicious_patterns {
                                 if content.contains(pattern) {
-                                    tx.send(format!(
+                                    let _ = tx.send(format!(
                                         "Suspicious file detected: {} (contains: {})",
                                         path.display(),
                                         pattern
-                                    ))
-                                    .unwrap();
+                                    ));
                                 }
                             }
                         }
@@ -57,69 +93,108 @@ fn main() {
         }
     }
 
-    drop(tx); // Close the sending side
+    drop(tx);
     for message in rx {
         println!("{}", message);
     }
 }
 
-// Function to check if the program is running as root
 fn is_root() -> bool {
     match Command::new("id").arg("-u").output() {
-        Ok(output) => {
-            if let Ok(uid) = String::from_utf8(output.stdout) {
-                return uid.trim() == "0";
-            }
-        }
-        Err(_) => {}
+        Ok(output) => String::from_utf8_lossy(&output.stdout).trim() == "0",
+        Err(_) => false,
     }
-    false
 }
 EOF
 )
 
-# Function to compile and run the Rust directory scanner
+
 run_rust_scanner() {
     echo "$RUST_CODE" > /tmp/scanner.rs
     rustc /tmp/scanner.rs -o /tmp/scanner
-    /tmp/scanner >> "$LOG_FILE"
+    /tmp/scanner /tmp >> "$LOG_FILE"
     rm -f /tmp/scanner.rs /tmp/scanner
 }
 
-# Function to monitor network connections for reverse shell attempts
+
 monitor_connections() {
-    netstat -tunp | grep -E 'ESTABLISHED.*(bash|sh|nc|perl|python|php)' | while read -r line; do
+    ss -tunp | grep -E 'ESTAB.*(bash|sh|nc|perl|python|php)' | while read -r line; do
         echo "$(date): Suspicious connection detected: $line" >> "$LOG_FILE"
-        # Extract the source IP address
         SRC_IP=$(echo "$line" | awk '{print $5}' | cut -d: -f1)
         echo "$(date): Blocking IP: $SRC_IP" >> "$LOG_FILE"
-        # Block the source IP using iptables
-        iptables -A INPUT -s "$SRC_IP" -j DROP
+        iptables -C INPUT -s "$SRC_IP" -j DROP 2>/dev/null || iptables -A INPUT -s "$SRC_IP" -j DROP
     done
 }
 
-# check  log file for new attempts
-check_logs() {
-    tail -n 10 "$LOG_FILE"
+
+trim_log() {
+    if [ $(wc -l < "$LOG_FILE") -gt "$LOG_MAX" ]; then
+        tail -n "$LOG_MAX" "$LOG_FILE" > "$LOG_FILE.tmp" && mv "$LOG_FILE.tmp" "$LOG_FILE"
+    fi
 }
 
-# Schedule the script using cron
+
+check_logs() {
+    echo -e "\n--- Last 10 entries ---"
+    tail -n 10 "$LOG_FILE"
+    echo -e "------------------------\n"
+}
+
+
 schedule_cron() {
-    (crontab -l 2>/dev/null; echo "*/30 * * * * /bin/bash $0") | crontab -
+    (crontab -l 2>/dev/null; echo "*/30 * * * * /bin/bash $0 --cron") | crontab -
     echo "$(date): Script scheduled to run every 30 minutes via cron." >> "$LOG_FILE"
 }
 
-# Main function
+
+install_systemd_service() {
+    SERVICE_FILE="/etc/systemd/system/kill_shell.service"
+
+    echo "[*] Creating systemd service at $SERVICE_FILE..."
+
+    cat <<EOF > "$SERVICE_FILE"
+[Unit]
+Description=Reverse Shell Detector and Blocker
+After=network.target
+
+[Service]
+ExecStart=/bin/bash $0 --cron
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reexec
+    systemctl daemon-reload
+    systemctl enable kill_shell.service
+    systemctl start kill_shell.service
+
+    echo "$(date): kill_shell systemd service installed and started." >> "$LOG_FILE"
+}
+
+# MAIN 
 main() {
+    install_dependencies
     monitor_connections
     run_rust_scanner
+    trim_log
     check_logs
 }
 
-# Check if the script is being run manually or via cron
-if [[ "$1" == "--cron" ]]; then
-    main
-else
-    schedule_cron
-    echo "Script scheduled via cron. Logs will be updated every 30 minutes."
-fi
+
+case "$1" in
+    --cron)
+        main
+        ;;
+    --systemctl)
+        install_dependencies
+        install_systemd_service
+        ;;
+    *)
+        install_dependencies
+        schedule_cron
+        echo "Script scheduled via cron. Logs will be updated every 30 minutes."
+        ;;
+esac
