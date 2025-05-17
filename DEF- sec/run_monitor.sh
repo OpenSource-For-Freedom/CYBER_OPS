@@ -1,11 +1,16 @@
 #!/bin/bash
 
-# this is fhe monitor for COC
-# to run as a servuce: sudo python3 monitor.py
+# Monitor and Orchestrator Installer for COC
+# To run as a service: sudo bash setup_orchestrator.sh
 
-#!/bin/bash
+
+
+
 
 set -e
+
+
+
 
 BASE_DIR="/opt/monitor_orchestrator"
 VENV_DIR="$BASE_DIR/venv"
@@ -16,6 +21,10 @@ INSTALL_SCRIPT="$BASE_DIR/install_dependencies.sh"
 WATCHDOG_SCRIPT="$BASE_DIR/watchdog.sh"
 GLOBAL_LOG="$BASE_DIR/global_monitor.log"
 WATCHDOG_LOG="$BASE_DIR/watchdog.log"
+
+
+
+
 
 echo "[+] Creating base directory at $BASE_DIR"
 mkdir -p "$BASE_DIR"
@@ -30,6 +39,10 @@ else
   exit 1
 fi
 
+
+
+
+
 echo "[+] Setting up Python virtual environment..."
 if [ ! -d "$VENV_DIR" ]; then
   python3 -m venv "$VENV_DIR"
@@ -40,8 +53,13 @@ source "$VENV_DIR/bin/activate"
 if [ -f "$REQS" ]; then
   pip install -r "$REQS"
 else
-  echo "requirements.txt not found. You can manually add it to $REQS later."
+  echo "[!] requirements.txt not found. You can manually add it to $REQS later."
 fi
+
+
+
+
+
 
 echo "[+] Creating monitor launcher script..."
 cat <<EOF > "$RUNNER"
@@ -56,13 +74,13 @@ def check_root():
 
 def run_scripts(directory, global_log):
     for filename in os.listdir(directory):
-        if filename.endswith(".py") and filename != "run_monitors.py":
-            path = os.path.join(directory, filename)
-            subprocess.Popen(
-                ['python3', path],
-                stdout=open(global_log, 'a'),
-                stderr=subprocess.STDOUT
-            )
+        path = os.path.join(directory, filename)
+        if filename == os.path.basename(__file__):
+            continue
+        if filename.endswith(".py"):
+            subprocess.Popen(['python3', path], stdout=open(global_log, 'a'), stderr=subprocess.STDOUT)
+        elif filename.endswith(".sh"):
+            subprocess.Popen(['bash', path], stdout=open(global_log, 'a'), stderr=subprocess.STDOUT)
 
 if __name__ == "__main__":
     check_root()
@@ -108,6 +126,11 @@ cat <<EOF > /etc/systemd/system/monitor_orchestrator.service
 Description=Monitor Orchestrator Service
 After=network.target
 
+
+
+
+
+
 [Service]
 Type=simple
 ExecStart=$DAEMON
@@ -120,6 +143,9 @@ User=root
 [Install]
 WantedBy=multi-user.target
 EOF
+
+
+
 
 echo "[+] Creating watchdog service file..."
 cat <<EOF > /etc/systemd/system/orchestrator_watchdog.service
@@ -145,16 +171,27 @@ Unit=orchestrator_watchdog.service
 WantedBy=timers.target
 EOF
 
+
+
+
+
+
 echo "[+] Reloading systemd and enabling services..."
 systemctl daemon-reexec
 systemctl daemon-reload
 systemctl enable monitor_orchestrator.service
 systemctl enable orchestrator_watchdog.timer
 
+
+
+
 echo "[+] Starting services..."
 systemctl start monitor_orchestrator.service
 systemctl start orchestrator_watchdog.timer
 
+
+
+
 echo "[✓] Setup complete. All scripts are running and monitored."
-echo "    Logs: $GLOBAL_LOG"
+echo "    Monitor Log: $GLOBAL_LOG"
 echo "    Watchdog Log: $WATCHDOG_LOG"
