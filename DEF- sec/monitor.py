@@ -1,45 +1,138 @@
+#!/usr/bin/env python3
+
+# sudo python3 monitor.py
+
+# runs as a service and alerts using dbus
+
+import os
 import subprocess
-import tkinter as tk
-from tkinter import scrolledtext
 import threading
+import shutil
+import time
+import getpass
+import sys
+import gi
 
 
-def run_bash_script(script_path, log_path):
-    with open(log_path, "w") as log_file:
-        process = subprocess.Popen(['bash', script_path], stdout=log_file, stderr=log_file)
-        process.wait()
+LOG_KEYWORDS = ["ALERT", "WARNING", "UNAUTHORIZED", "ERROR"]
+LOG_FILE = "/var/log/hardn/monitor.log"
+SCRIPT_PATH = "/opt/hardn/monitors/run_monitors.sh"
+SERVICE_NAME = "monitor_gui.service"
+
+BANNER = r"""
+   ▄▄▄▄███▄▄▄▄    ▄██████▄  ███▄▄▄▄    ▄█      ███      ▄██████▄     ▄████████      
+ ▄██▀▀▀███▀▀▀██▄ ███    ███ ███▀▀▀██▄ ███  ▀█████████▄ ███    ███   ███    ███      
+ ███   ███   ███ ███    ███ ███   ███ ███▌    ▀███▀▀██ ███    ███   ███    ███      
+ ███   ███   ███ ███    ███ ███   ███ ███▌     ███   ▀ ███    ███  ▄███▄▄▄▄██▀      
+ ███   ███   ███ ███    ███ ███   ███ ███▌     ███     ███    ███ ▀▀███▀▀▀▀▀        
+ ███   ███   ███ ███    ███ ███   ███ ███      ███     ███    ███ ▀███████████      
+ ███   ███   ███ ███    ███ ███   ███ ███      ███     ███    ███   ███    ███      
+  ▀█   ███   █▀   ▀██████▀   ▀█   █▀  █▀      ▄████▀    ▀██████▀    ███    ███      
+                                                                    ███    ███      
+"""
 
 
-def update_log_display(log_path, text_widget):
-    with open(log_path, "r") as log_file:
-        log_content = log_file.read()
-    text_widget.config(state=tk.NORMAL)
-    text_widget.delete(1.0, tk.END)
-    text_widget.insert(tk.INSERT, log_content)
-    text_widget.config(state=tk.DISABLED)
+def install_dependencies():
+    apt_packages = ["libnotify-bin", "python3-gi", "gir1.2-appindicator3-0.1"]
+    pip_packages = ["notify2"]
+    try:
+        print("[+] Installing system dependencies...")
+        subprocess.run(["sudo", "apt", "update"], check=True)
+        subprocess.run(["sudo", "apt", "install", "-y"] + apt_packages, check=True)
+    except Exception:
+        print("[!] System-level dependency install failed or already done.")
+    try:
+        print("[+] Installing Python packages...")
+        subprocess.run([sys.executable, "-m", "pip", "install"] + pip_packages, check=True)
+    except Exception:
+        print("[!] Python package install failed or already done.")
 
 
-def run_and_display_logs(script_path, log_path, text_widget):
-    threading.Thread(target=run_bash_script, args=(script_path, log_path)).start()
-    threading.Thread(target=update_log_display, args=(log_path, text_widget)).start()
+def run_monitor_script():
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+    with open(LOG_FILE, "w") as log_file:
+        subprocess.Popen(['bash', SCRIPT_PATH], stdout=log_file, stderr=log_file)
 
 
-def create_gui(script_path, log_path):
-    root = tk.Tk()
-    root.title("Monitor Logs")
+def monitor_logs():
+    import notify2
+    notify2.init("HARDN Monitor")
+    last_pos = 0
+    while True:
+        if not os.path.exists(LOG_FILE):
+            time.sleep(3)
+            continue
+        with open(LOG_FILE, "r") as f:
+            f.seek(last_pos)
+            new_lines = f.readlines()
+            last_pos = f.tell()
+        for line in new_lines:
+            if any(k in line.upper() for k in LOG_KEYWORDS):
+                n = notify2.Notification("HARDN Alert", line.strip())
+                n.set_urgency(notify2.URGENCY_CRITICAL)
+                n.show()
+        time.sleep(3)
 
-    frame = tk.Frame(root)
-    frame.pack(padx=10, pady=10)
 
-    text_widget = scrolledtext.ScrolledText(frame, width=80, height=20, state=tk.DISABLED)
-    text_widget.pack(padx=10, pady=10)
+def build_menu(Gtk):
+    menu = Gtk.Menu()
+    quit_item = Gtk.MenuItem(label="Quit Monitor")
+    quit_item.connect("activate", Gtk.main_quit)
+    menu.append(quit_item)
+    menu.show_all()
+    return menu
 
-    button = tk.Button(frame, text="Run Monitors", command=lambda: run_and_display_logs(script_path, log_path, text_widget))
-    button.pack(pady=10)
 
-    root.mainloop()
+def tray_main():
+    install_dependencies()
+    setup_user_service()
 
+    from gi.repository import Gtk, AppIndicator3
+    import notify2
+
+    notify2.init("HARDN Monitor")
+
+    indicator = AppIndicator3.Indicator.new(
+        "hardn-tray",
+        "network-transmit-receive",
+        AppIndicator3.IndicatorCategory.APPLICATION_STATUS
+    )
+    indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
+    indicator.set_menu(build_menu(Gtk))
+
+    threading.Thread(target=run_monitor_script, daemon=True).start()
+    threading.Thread(target=monitor_logs, daemon=True).start()
+
+    Gtk.main()
+
+
+def setup_user_service():
+    user_dir = os.path.expanduser("~/.config/systemd/user")
+    os.makedirs(user_dir, exist_ok=True)
+    service_path = os.path.join(user_dir, SERVICE_NAME)
+    python_exec = shutil.which("python3")
+    script_exec = os.path.realpath(__file__)
+
+    if not os.path.exists(service_path):
+        with open(service_path, "w") as f:
+            f.write(f"""[Unit]
+Description=HARDN Log Monitor GUI (User)
+After=default.target
+
+[Service]
+ExecStart={python_exec} {script_exec}
+Restart=on-failure
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=$HOME/.Xauthority
+
+[Install]
+WantedBy=default.target
+""")
+        subprocess.run(["systemctl", "--user", "daemon-reload"])
+        subprocess.run(["systemctl", "--user", "enable", SERVICE_NAME])
+        print("[+] User systemd service created and enabled.")
+
+# MAIN
 if __name__ == "__main__":
-    script_path = "/path/to/run_monitors.sh"
-    log_path = "/path/to/monitor.log"
-    create_gui(script_path, log_path)
+    print(BANNER)
+    tray_main()
